@@ -2344,7 +2344,7 @@ inline void spi_scan(device half *qB, device const uint *blocks, device const ui
             if (DIAG == 24 && t0 + C > rowPos[0]) break;        // timing: leave out the chunks that hold the step's own rows
             // DIAG 8 makes the chunk loop-invariant, and the compiler then lifts the whole score
             // product out of the loop: it times "no score matmul", not "no memory traffic".
-            // For the latter, set aliasTokens (SPLOSH_ATTN_ALIAS).
+            // For the latter, set aliasTokens (TOPSPIN_ATTN_ALIAS).
             const uint tokenBase = DIAG == 8 ? kvHead * 256u
                 : p.aliasTokens != 0u ? kvHead * 256u + (t0 % p.aliasTokens) * p.kvHeads : pageTokens + chunk * C;
             auto kt = tensor(kCodes + ulong(tokenBase) * 256u, dextents<int, 2>{256, C}, array<int, 2>{1, 256});
@@ -2632,7 +2632,7 @@ SP_DEFINE_ATTN_SCAN_I8_CAP(sp_attn_scan_i8_m48c64s3d5, 48, 64, 3, bfloat, 5, 32)
 SP_DEFINE_ATTN_SCAN_I8_CAP(sp_attn_scan_i8_m48c64s12d5, 48, 64, 12, bfloat, 5, 8)
 SP_DEFINE_ATTN_SCAN_I8_CAP(sp_attn_scan_i8_m48c64s6, 48, 64, 6, bfloat, 0, 16)
 SP_DEFINE_ATTN_SCAN_I8_CAP(sp_attn_scan_i8_m48c64s3, 48, 64, 3, bfloat, 0, 32)
-// The capacity is what the partition probe (the d5 variants, SPLOSH_DUMP_PARTIALS) reports for
+// The capacity is what the partition probe (the d5 variants, TOPSPIN_DUMP_PARTIALS) reports for
 // the shape, not what the formula gives: a kernel sized wrongly computes no scores, poisons its
 // output, and looks fast. m48c64s12 was defined with 8 and m48c32s8 without, and both were.
 SP_DEFINE_ATTN_SCAN_I8_CAP(sp_attn_scan_i8_m48c64s12, 48, 64, 12, bfloat, 0, 16)

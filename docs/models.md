@@ -1,6 +1,6 @@
 # Models
 
-The four models Splosh runs and the fine-tune Swift-1.5, how each is installed, where its files are kept and how the
+The four models Topspin runs and the fine-tune Swift-1.5, how each is installed, where its files are kept and how the
 server changes between them. Back to the [README](../README.md).
 
 - [The four](#the-four)
@@ -14,7 +14,7 @@ server changes between them. Back to the [README](../README.md).
 
 ## The four
 
-Everything Splosh runs is one model, Qwen3.8-27B, at four precisions. One is in memory at a
+Everything Topspin runs is one model, Qwen3.8-27B, at four precisions. One is in memory at a
 time, and the server changes between the ones that are installed.
 
 | Name | Weights | Download | In memory | Bits a weight | Weight error | Decode against `mq4` |
@@ -47,7 +47,7 @@ model's, so it is served as the four are. The files are llama.cpp's own K-quants
 | `sq5` | Swift-1.5 `Q5_K_M` | 20.9 GB | 19.2 GiB | 6.13 |
 | `sq6` | Swift-1.5 `Q6_K` | 23.9 GB | 21.9 GiB | 7.00 |
 
-`sq5` is the one that has been used: installed with `splosh download sq5` (the conversion took
+`sq5` is the one that has been used: installed with `topspin download sq5` (the conversion took
 17 s and wrote 20.65 GB) and run under an agent harness on 2026-10-07. It has not been timed,
 and its output has not been compared with llama.cpp's. `sq4` and `sq6` have not been converted
 or run, and their sizes are worked out from the files' headers.
@@ -72,23 +72,23 @@ All of these start the same install, and each shows its steps and progress:
 | The server's first page | with no model installed, `http://127.0.0.1:8091/` lists them: press Download |
 | The server's terminal | on that first launch, Enter installs the default; a model's name and Enter, that one |
 | The models page | `http://127.0.0.1:8091/models`, under "Download models", at any time: another model can be added while one is serving |
-| A shell | `.build/release/splosh download uq5`; with no name, the default |
+| A shell | `.build/release/topspin download uq5`; with no name, the default |
 
-`splosh download --list` says which models are installed. What an install does:
+`topspin download --list` says which models are installed. What an install does:
 
 1. **Tokenizer**: the three small files that turn text into tokens and back, into
    `inputs/tokenizer`.
-2. **Weights**: downloaded from Hugging Face into `inputs/`, at the revision Splosh was
+2. **Weights**: downloaded from Hugging Face into `inputs/`, at the revision Topspin was
    measured on. A download that is stopped keeps what has arrived and carries on from there.
    Every file is checked against its SHA-256 before it is used.
 3. **Convert**: the weights are written in the layout the engine maps straight into memory,
    under `models/` (for `mq4`, `models/q4/weights.tiled.splw`). An Unsloth file takes about
    half a minute.
-4. **Register**: a `model.<name>` line in `splosh.toml`, so the server and its clients can ask
+4. **Register**: a `model.<name>` line in `topspin.toml`, so the server and its clients can ask
    for the model by name.
 5. **Draft model**: the DFlash 2 checkpoint `incoai/Qwen3.8-27B-DFlash2` (3.8 GB, into
    `inputs/draft`), fetched once and shared by every model. Speculative decoding needs it:
-   without it Splosh writes one token a step, about 16 tokens/s.
+   without it Topspin writes one token a step, about 16 tokens/s.
 
 An install needs the download and the converted file on disk at once, and for `mq4` a second
 converted file for a while: 48 GB for `mq4`, 33 to 46 GB for the others, plus the draft model.
@@ -103,7 +103,7 @@ model when it ends, and the models page shows the place with each model.
 
 | What | Where | Needed afterwards |
 |---|---|---|
-| The converted model, the one file the server reads | `models/q4/weights.tiled.splw` for `mq4`; `models/gguf/ud-q4_k_m.splw`, `ud-q5_k_m.splw`, `ud-q6_k_m.splw` for the others; or wherever its `model.<name>` line in `splosh.toml` says | yes |
+| The converted model, the one file the server reads | `models/q4/weights.tiled.splw` for `mq4`; `models/gguf/ud-q4_k_m.splw`, `ud-q5_k_m.splw`, `ud-q6_k_m.splw` for the others; or wherever its `model.<name>` line in `topspin.toml` says | yes |
 | What it was converted from | `inputs/mlx-q4/`, `inputs/gguf/` | no: it can be deleted, which leaves about the size in the table above |
 | The tokenizer and the draft model | `inputs/tokenizer/`, `inputs/draft/` | yes |
 | How each install stands, for the pages | `models/.downloads/` | no |
@@ -114,7 +114,7 @@ else, move the file and change its `model.<name>` line.
 
 ## Files you already have
 
-Files you have downloaded yourself go where Splosh would put them, under the names they have on
+Files you have downloaded yourself go where Topspin would put them, under the names they have on
 Hugging Face. Then choose the model in any of the ways above: what is already there is checked
 and not downloaded again. Files in the Hugging Face cache (`~/.cache/huggingface/hub`, where
 `hf download` puts them) are found too.
@@ -127,12 +127,12 @@ and not downloaded again. Files in the Hugging Face cache (`~/.cache/huggingface
 | `uq6` | `inputs/gguf/Qwen3.8-27B-UD-Q6_K_M.gguf` |
 | the draft model | `inputs/draft/model.safetensors` |
 
-`splosh download --list` prints the same places as whole paths. A file of yours that is not
-the one Splosh was measured on (another revision, say) is used as it is, with a line saying so.
+`topspin download --list` prints the same places as whole paths. A file of yours that is not
+the one Topspin was measured on (another revision, say) is used as it is, with a line saying so.
 
 ## Changing between them
 
-`splosh.toml` registers the models by name, and the server can change between the ones that
+`topspin.toml` registers the models by name, and the server can change between the ones that
 are installed. Only one is in memory at a time.
 
 ```
@@ -143,7 +143,7 @@ model.uq5 = "models/gguf/ud-q5_k_m.splw"
 model.uq6 = "models/gguf/ud-q6_k_m.splw"
 ```
 
-- `model` is the one the server starts on; `splosh serve --model uq6` overrides it. If that
+- `model` is the one the server starts on; `topspin serve --model uq6` overrides it. If that
   one is not installed, the server starts on the first that is.
 - **A chat request that names another registered model has it loaded** in place of the one in
   memory. Nothing running is cut: the request waits until the loaded model's requests have
@@ -152,7 +152,7 @@ model.uq6 = "models/gguf/ud-q6_k_m.splw"
   whichever model is loaded, so existing clients need no change.
 - **Pick from a list** on the models page or in the dashboard's header: each model is shown
   with its size and file, and Load switches to it.
-- `splosh models` prints the list and marks the loaded one; `splosh models --load uq4`
+- `topspin models` prints the list and marks the loaded one; `topspin models --load uq4`
   switches from the command line. `GET /v1/models` returns the same list.
 - A model that is still busy after `switchWaitSeconds` keeps its place and the request for the
   other gets a 503 to retry; a model that fails to load gives way to the one before it.
@@ -169,7 +169,7 @@ The settings named here are in the table under [Settings](server.md#settings).
 - **`uq5` is correct.** Its greedy continuation equals llama.cpp's on the same file, token for
   token, for 64 and 96 tokens, with the prompt read through each of the three kernel shapes
   (`tools/gguf-compare`). `uq4` and `uq6` load and answer sensibly but have not been compared.
-- **`uq5` against `mq4`**, one session through `splosh generate`, the same binary, power mode
+- **`uq5` against `mq4`**, one session through `topspin generate`, the same binary, power mode
   Automatic (so both sides are below the High Power figures in the README), runs alternated:
   code with speculation 61 against 73 tokens/s; an essay 22 against 31; a 9.6K-token prompt
   319-388 against 268-362 tokens/s. A 16-row decode step takes 121 ms against 87. `uq4` and
@@ -185,7 +185,7 @@ How a GGUF weight reaches the multiplier is under
 
 ## By hand
 
-`splosh download` is these commands run for you; they are here for a file it does not know, or
+`topspin download` is these commands run for you; they are here for a file it does not know, or
 an artifact wanted somewhere else.
 
 The tokenizer, into `inputs/tokenizer`, and the MLX pack, whole, into `inputs/mlx-q4` (the
@@ -199,15 +199,15 @@ python3 tools/fetch_inputs.py --fetch
 hf download mlx-community/Qwen3.8-27B-4bit --revision 3e6447f082e89cc7f0bc6e5441afd38dfce760ff --local-dir inputs/mlx-q4
 ```
 
-Convert it from the repository root: once to Splosh's format, once more into the tiled layout
+Convert it from the repository root: once to Topspin's format, once more into the tiled layout
 the engine runs from.
 
 ```bash
-.build/release/splosh convert --input inputs/mlx-q4 --out models/q4/weights.splw --verify
+.build/release/topspin convert --input inputs/mlx-q4 --out models/q4/weights.splw --verify
 ```
 
 ```bash
-.build/release/splosh convert --retile --input models/q4/weights.splw --out models/q4/weights.tiled.splw
+.build/release/topspin convert --retile --input models/q4/weights.splw --out models/q4/weights.tiled.splw
 ```
 
 A GGUF file. Conversion only re-orders the codes into the layout the kernels read; the result
@@ -218,8 +218,8 @@ hf download unsloth/Qwen3.8-27B-GGUF Qwen3.8-27B-UD-Q5_K_M.gguf --local-dir inpu
 ```
 
 ```bash
-.build/release/splosh convert --input inputs/gguf/Qwen3.8-27B-UD-Q5_K_M.gguf --out models/gguf/ud-q5_k_m.splw
+.build/release/topspin convert --input inputs/gguf/Qwen3.8-27B-UD-Q5_K_M.gguf --out models/gguf/ud-q5_k_m.splw
 ```
 
-Then register the artifact as a model (a `model.<name>` line in `splosh.toml`), or, with no
+Then register the artifact as a model (a `model.<name>` line in `topspin.toml`), or, with no
 models registered, point `weightsPath` at it.

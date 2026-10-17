@@ -11,7 +11,7 @@ for name in passes:
         if "test" not in entry or entry["test"].startswith("warm"): continue
         data.setdefault((entry["engine"], entry["test"]), {})[name] = entry.get("result") or entry.get("results")
 
-engines = ["splish", "splash", "splosh"]
+engines = ["splish", "splash", "topspin"]
 singles = ["single 10K", "single 50K", "single 150K", "single 200K"]
 
 def mean(values):

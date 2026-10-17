@@ -1,4 +1,4 @@
-# Splosh Makefile — the Metal build path and the wrapper targets of IMPLEMENTATION-PLAN.md §4.8.
+# Topspin Makefile — the Metal build path and the wrapper targets of IMPLEMENTATION-PLAN.md §4.8.
 #
 # The Metal recipe is rev4 §3.3 (proven end-to-end), with the one addition this host requires:
 # the clang module cache must live inside the workspace. Without it `xcrun metal` dies with
@@ -10,7 +10,7 @@
 SHELL := /bin/bash
 TMP      := $(CURDIR)/.build/tmp
 MCACHE   := $(CURDIR)/.build/metal-module-cache
-OUT      := Sources/SploshCore/Resources
+OUT      := Sources/TopspinCore/Resources
 METALLIB := $(OUT)/default.metallib
 STD      ?= metal4.0
 SDK      ?= macosx
@@ -47,8 +47,8 @@ fixtures-verify:
 check-m0:
 	@set -euo pipefail; \
 	 echo 'M0.1 package'; \
-	 swift package --disable-sandbox dump-package > /tmp/splosh-package.json; \
-	 python3 tools/check_package.py /tmp/splosh-package.json; \
+	 swift package --disable-sandbox dump-package > /tmp/topspin-package.json; \
+	 python3 tools/check_package.py /tmp/topspin-package.json; \
 	 echo 'M0.2 shaders/exports'; \
 	 $(MAKE) shaders SHADER_SRC=Sources/Shaders/copy.metal; \
 	 test -s $(METALLIB); \
@@ -59,7 +59,7 @@ check-m0:
 	 echo 'M0 filters (copy-only fixture)'; \
 	 for filter in MetallibTests DeviceTests CLIArgsTests DoctorCommandTests ServerCommandTests; do ./tools/swift-test-filter $$filter; done; \
 	 echo 'M0.5 CLI help/stubs'; \
-	 for command in doctor serve convert bench cache oracle soak; do swift run --disable-sandbox splosh $$command --help >/tmp/m0-$$command-help.out; done; \
+	 for command in doctor serve convert bench cache oracle soak; do swift run --disable-sandbox topspin $$command --help >/tmp/m0-$$command-help.out; done; \
 	 serve_pid=''; \
 	 cleanup_m0_serve() { \
 		 set +e; \
@@ -71,7 +71,7 @@ check-m0:
 	 trap cleanup_m0_serve EXIT; \
 	 test -z "$$(lsof -nP -iTCP:18091 -sTCP:LISTEN 2>/dev/null)" || { echo 'serve port 18091 already bound' >&2; exit 1; }; \
 	 swift build --disable-sandbox; \
-	 serve_bin="$(CURDIR)/.build/debug/splosh"; test -x "$$serve_bin"; \
+	 serve_bin="$(CURDIR)/.build/debug/topspin"; test -x "$$serve_bin"; \
 	 "$$serve_bin" serve --port 18091 >/tmp/m0-serve.out 2>/tmp/m0-serve.err & serve_pid=$$!; \
 	 serve_ready=0; \
 	 for _ in $$(seq 1 40); do \
@@ -85,14 +85,14 @@ check-m0:
 	 serve_pid=''; \
 	 cleanup_m0_serve; trap - EXIT; \
 	 for command in convert bench cache oracle soak; do \
-		 if swift run --disable-sandbox splosh $$command >/tmp/m0-$$command.out 2>/tmp/m0-$$command.err; then \
+		 if swift run --disable-sandbox topspin $$command >/tmp/m0-$$command.out 2>/tmp/m0-$$command.err; then \
 			echo "stub $$command unexpectedly exited 0" >&2; exit 1; \
 		 fi; \
 		 grep -Fq "not implemented: $$command" /tmp/m0-$$command.err; \
 	 done; \
 	 echo 'M0.10 preflight/doctor'; \
 	 ./tools/preflight.sh; \
-	 swift run --disable-sandbox splosh doctor; \
+	 swift run --disable-sandbox topspin doctor; \
 	 ./tools/swift-test-filter DoctorCommandTests; \
 	 echo 'M0.10 fixtures-verify expected stub failure'; \
 	 if $(MAKE) fixtures-verify; then echo 'fixtures-verify unexpectedly passed' >&2; exit 1; fi; \
@@ -136,18 +136,18 @@ check-m2:
 	 echo 'M2 fail-closed prerequisites and assets'; \
 	 python3 tools/check_m2_assets.py; \
 	 echo 'M2 ModelConfig/LayerGraph and oracle gates'; \
-	 for filter in ModelConfigTests TensorInventoryTests LayerGraphTests SploshOracleTests RopeOracleTests SwigluOracleTests AttentionOracleTests GdnOracleTests GdnPrefillChunkTests; do ./tools/swift-test-filter $$filter; done; \
+	 for filter in ModelConfigTests TensorInventoryTests LayerGraphTests TopspinOracleTests RopeOracleTests SwigluOracleTests AttentionOracleTests GdnOracleTests GdnPrefillChunkTests; do ./tools/swift-test-filter $$filter; done; \
 	 echo 'M2 converter/oracle/serve/integration gates'; \
-	 swift run --disable-sandbox splosh convert --verify; \
-	 swift run --disable-sandbox splosh oracle --prompt Tests/Goldens/m2_prompt.txt; \
-	 swift run --disable-sandbox splosh serve --help; \
+	 swift run --disable-sandbox topspin convert --verify; \
+	 swift run --disable-sandbox topspin oracle --prompt Tests/Goldens/m2_prompt.txt; \
+	 swift run --disable-sandbox topspin serve --help; \
 	 $(MAKE) check-model; $(MAKE) check-hardware; $(MAKE) check-integration
 
 # Build and test the isolated M2.4 shader set without changing the cumulative M2 artifact.
 # The temporary resource swap is restored by the EXIT trap, so default.metallib is never left
 # claiming to be the cumulative (M2) library after this target finishes.
 # Build a cumulative temporary metallib and run exactly one isolated oracle suite.
-# No recipe ever writes Sources/SploshCore/Resources/default.metallib.
+# No recipe ever writes Sources/TopspinCore/Resources/default.metallib.
 check-m2.3:
 	@./tools/check-m23-isolated.sh m2.3 M23RmsnormTests 'copy rmsnorm' Sources/Shaders/copy.metal Sources/Shaders/rmsnorm.metal
 check-m2.3b:

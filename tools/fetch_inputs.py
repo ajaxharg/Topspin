@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch and verify Splosh input assets.
+"""Fetch and verify Topspin input assets.
 
 Large model packs are never fetched implicitly.  ``--fetch`` retains the M1
 small-asset behaviour; use ``--fetch-pack mlx-q4``, ``--fetch-pack mlx-q8`` or
@@ -68,7 +68,7 @@ def pack_directory(root: pathlib.Path, pack: str) -> pathlib.Path:
 
 def download(repo: str, revision: str, name: str, dest: pathlib.Path) -> None:
     url = f"https://huggingface.co/{repo}/resolve/{revision}/{name}"
-    request = urllib.request.Request(url, headers={"User-Agent": "splosh-fetch-inputs/2"})
+    request = urllib.request.Request(url, headers={"User-Agent": "topspin-fetch-inputs/2"})
     token = os.environ.get("HF_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
@@ -188,7 +188,7 @@ def fetch_pack(root: pathlib.Path, pack: str) -> int:
 def hub_hashes(repo: str, revision: str) -> dict[str, str]:
     """The Hub's SHA-256 of every LFS file of a repository at a revision."""
     request = urllib.request.Request(f"https://huggingface.co/api/models/{repo}/revision/{revision}?blobs=true",
-                                     headers={"User-Agent": "splosh-fetch-inputs/2"})
+                                     headers={"User-Agent": "topspin-fetch-inputs/2"})
     token = os.environ.get("HF_TOKEN")
     if token:
         request.add_header("Authorization", f"Bearer {token}")
@@ -220,7 +220,7 @@ def adopt_pack(root: pathlib.Path, pack: str) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="fetch_inputs.py", description="Fetch and verify pinned Splosh model inputs.")
+    p = argparse.ArgumentParser(prog="fetch_inputs.py", description="Fetch and verify pinned Topspin model inputs.")
     p.add_argument("--check-access", action="store_true", help="check dependencies and writable input/artifact paths")
     p.add_argument("--fetch", action="store_true", help="download the pinned tokenizer and config assets")
     p.add_argument("--fetch-pack", choices=tuple(PACKS), help="explicitly download one large model pack (never implicit)")

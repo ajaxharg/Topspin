@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Restart the engine under load, without the model, and check that no client can tell.
 
-`splosh serve --echo` is the real server (the process that holds the port, the engine child
+`topspin serve --echo` is the real server (the process that holds the port, the engine child
 on its private socket, the same HTTP layer) with a stand-in for the model that says a message
 back a word at a time. This starts one, restarts its engine while a slow reply is in flight,
 and checks that:
@@ -17,11 +17,11 @@ and checks that:
   - a request the engine had not begun to answer when it was cut, or when it died, is given
     to the next engine; a client that half-closes its connection still gets its reply.
 
-usage: tools/restart-smoke [path to splosh]     (default .build/release/splosh)
+usage: tools/restart-smoke [path to topspin]     (default .build/release/topspin)
 """
 import http.client, json, os, signal, socket, subprocess, sys, threading, time
 
-BINARY = sys.argv[1] if len(sys.argv) > 1 else ".build/release/splosh"
+BINARY = sys.argv[1] if len(sys.argv) > 1 else ".build/release/topspin"
 failures = []
 
 
@@ -72,7 +72,7 @@ def engine_of(pid):
 
 def main():
     port = free_port()
-    environment = dict(os.environ, SPLOSH_ECHO_INTERVAL_MS="100")
+    environment = dict(os.environ, TOPSPIN_ECHO_INTERVAL_MS="100")
     server = subprocess.Popen([BINARY, "serve", "--echo", "--port", str(port)], env=environment,
                               stderr=subprocess.PIPE, text=True)
     log = []
@@ -159,8 +159,8 @@ def takeover():
     """A server of the older, one-process kind is replaced by a new one started with --takeover."""
     print("-- takeover")
     port = free_port()
-    environment = dict(os.environ, SPLOSH_ECHO_INTERVAL_MS="100")
-    old = subprocess.Popen([BINARY, "serve", "--echo", "--port", str(port)], env=dict(environment, SPLOSH_SERVE_DIRECT="1"),
+    environment = dict(os.environ, TOPSPIN_ECHO_INTERVAL_MS="100")
+    old = subprocess.Popen([BINARY, "serve", "--echo", "--port", str(port)], env=dict(environment, TOPSPIN_SERVE_DIRECT="1"),
                            stderr=subprocess.DEVNULL)
     new = None
     try:
@@ -232,7 +232,7 @@ def interruptions():
     with tempfile.NamedTemporaryFile("w", suffix=".toml", delete=False) as config:
         config.write("restartDrainSeconds = 1\n")
     server = subprocess.Popen([BINARY, "serve", "--echo", "--port", str(port), "--config", config.name],
-                              env=dict(os.environ, SPLOSH_ECHO_INTERVAL_MS="100"), stderr=subprocess.PIPE, text=True)
+                              env=dict(os.environ, TOPSPIN_ECHO_INTERVAL_MS="100"), stderr=subprocess.PIPE, text=True)
     log = []
     threading.Thread(target=lambda: log.extend(iter(server.stderr.readline, "")), daemon=True).start()
     try:

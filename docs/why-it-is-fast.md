@@ -24,7 +24,7 @@ to get more than one token out of each pass over the weights.
 ## Prefill
 
 **The weights stay 4-bit all the way to the multiplier.** The MLX pack stores each group of 64
-weights as 4-bit codes with a scale and an offset. Splosh hands the codes to the accelerator
+weights as 4-bit codes with a scale and an offset. Topspin hands the codes to the accelerator
 as they are and applies scale and offset to the product afterwards, 64 inputs at a time.
 Nothing is expanded to 16 bits in memory, so a step reads 14 GiB, not 56.
 
@@ -96,7 +96,7 @@ count when the first eight are all right. A step yields about 3 tokens on prose,
 code, and 7-10 when the reply restructures code it has been given.
 
 **Copying beats guessing.** When the reply is repeating text already in the context (editing
-a file, quoting a tool result), the best draft is the text itself. Splosh keeps an index of
+a file, quoting a tool result), the best draft is the text itself. Topspin keeps an index of
 every three-token run in the conversation and proposes what followed last time: about 15
 tokens a step, with no draft pass at all.
 

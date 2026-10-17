@@ -30,7 +30,7 @@ using namespace mpp::tensor_ops;
 // sp_na_wide, over every tile. Sums taken in registers add in a different order
 // from simd_sum and differ by fp32 rounding. A bf16 gate is rounded before SiLU, which the
 // shipped path does not do: the product then differs by what a bf16 step of the gate moves it.
-// (Tests/SploshOracleTests/MlpFusedTests.swift measures all of these.)
+// (Tests/TopspinOracleTests/MlpFusedTests.swift measures all of these.)
 //
 // Weights are in the tiled layout (see engine_na.metal): packed [tile of 128 rows][quant
 // group][row in tile][32 bytes of codes], sidecars [tile][group][row in tile].

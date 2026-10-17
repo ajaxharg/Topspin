@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Splish, Splash and Splosh: one long prompt at a time (10K, 50K, 150K, 200K) and four 20K
+"""Splish, Splash and Topspin: one long prompt at a time (10K, 50K, 150K, 200K) and four 20K
 prompts at once, each answered at length so that decode speed is measured over many tokens.
 
-    tools/bench/engine-report [engines, comma-separated, default splash,splosh,splish] [tag]
+    tools/bench/engine-report [engines, comma-separated, default splash,topspin,splish] [tag]
     tools/bench/engine-report-summary <tag> [<tag> ...]
 
 Splish runs from the upstream clone at O below (a session scratchpad: point it at your clone).
@@ -20,21 +20,21 @@ import json, os, subprocess, sys, threading, time, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 S = ROOT + "/.build/engine-report/"
 os.makedirs(S, exist_ok=True)
-O = "/private/tmp/claude-501/-Users-andrewellis-Documents-Development-Splosh/f48dd602-4a36-479e-8c49-b6905a9ce34b/scratchpad/"
+O = "/private/tmp/claude-501/-Users-andrewellis-Documents-Development-Topspin/f48dd602-4a36-479e-8c49-b6905a9ce34b/scratchpad/"
 src = open(ROOT + "/tools/bench/server-ab").read().split("parser = argparse")[0]
 ns = {}; exec(src, ns)
 records = ns["records"]
 ANSWER = 800
 
-open(S + "report-splosh.toml", "w").write('prefixCacheDir = "none"\nport = 8792\n')
+open(S + "report-topspin.toml", "w").write('prefixCacheDir = "none"\nport = 8792\n')
 SERVERS = {
     "splish": (8801, [O + "splish-upstream/splish", "serve", "--model", "incoai/Qwen3.8-27B-Splash", "--port", "8801"], O + "splish-upstream"),
     "splash": (8801, ["splash", "serve", "--model", "incoai/Qwen3.8-27B-Splash", "--port", "8801"], O),
-    "splosh": (8792, [ROOT + "/.build/release/splosh", "serve", "--port", "8792", "--config", S + "report-splosh.toml"], ROOT),
+    "topspin": (8792, [ROOT + "/.build/release/topspin", "serve", "--port", "8792", "--config", S + "report-topspin.toml"], ROOT),
 }
 
 def stop_all():
-    # Splash's Python parent first, or it restarts its engine (see splosh-benchmark-method).
+    # Splash's Python parent first, or it restarts its engine (see topspin-benchmark-method).
     for pattern in ("splish-upstream/install/launch" + "er.py", "spl" + "ash.*server.py", "splish-upstream/build/spl" + "ash",
                     "spl" + "ash serve", "serve-nat" + "ive", "splo" + "sh serve --port 8792"):
         subprocess.run(["pkill", "-f", pattern]); time.sleep(0.5)
@@ -80,7 +80,7 @@ def long_prompt(size, seed):
             "with an introduction, several sections and a conclusion.")
 
 def main():
-    engines = (sys.argv[1] if len(sys.argv) > 1 else "splash,splosh,splish").split(",")
+    engines = (sys.argv[1] if len(sys.argv) > 1 else "splash,topspin,splish").split(",")
     tag = sys.argv[2] if len(sys.argv) > 2 else time.strftime("%H%M")
     out = open(S + f"report-{tag}.jsonl", "a")
     def record(entry):

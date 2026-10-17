@@ -8,7 +8,7 @@ using namespace mpp::tensor_ops;
 // attn_scan_r.metal — the attention scan with the softmax laid out by row.
 //
 // The same contract as spi_scan in engine_na.metal (bindings, grid, partial records), so the
-// engine and sp_attn_merge use it unchanged: SPLOSH_ATTN_SHAPE=r48c64s8.
+// engine and sp_attn_merge use it unchanged: TOPSPIN_ATTN_SHAPE=r48c64s8.
 //
 // What differs is the work between the two matmuls. spi_scan leaves the scores in the score
 // product's cooperative tensor, where each thread holds sixteen elements scattered over four

@@ -1,4 +1,4 @@
-# Splosh engine — performance research log
+# Topspin engine — performance research log
 
 Measured on an Apple M5 Pro (20-core GPU, 51.84 GiB Metal working set), macOS 27.0, with the
 Qwen3.8-27B MLX 4-bit pack (14.09 GiB of text tensors). Dates: 2026-10-01 and 2026-10-02.
@@ -13,7 +13,7 @@ Timings move by 20–35% with the machine's state, which is more than most of th
 - **Burst versus sustained.** The GPU runs about a third faster for the first second after being
   idle. Forty consecutive 128-row steps: 307 ms for the first, then a steady 380–390 ms. A
   five-iteration benchmark in a fresh process measures the burst; a real 20K-token prefill runs
-  at the sustained rate. `SPLOSH_CTXBENCH_ITERATIONS` above 5 drops the first four iterations.
+  at the sustained rate. `TOPSPIN_CTXBENCH_ITERATIONS` above 5 drops the first four iterations.
 - **Heat soak.** After minutes of load the sustained rate itself drops again (the same step
   measured 288 ms, 343 ms and 385 ms at different times of one night). The Mac is in the
   "Automatic" energy mode; High Power mode was not tried (a system setting).
@@ -42,7 +42,7 @@ Timings move by 20–35% with the machine's state, which is more than most of th
 With a step's command buffers committed within 4 ms, the GPU started the first of them 1.0-1.5 s
 later, and the next two after further gaps, when the server had idled for 25 s: 1.5-2.3 s lost
 on the first 128-row step of a request, 0.27 s on a narrow one, 0.3 s after only 2 s of idling,
-nothing on the steps that follow (`SPLOSH_STEP_TIMING`). The driver makes a command buffer's
+nothing on the steps that follow (`TOPSPIN_STEP_TIMING`). The driver makes a command buffer's
 resources resident when it is scheduled. An `MTLResidencySet` holding the weights, scratch and
 state, attached to the queue, cuts that to 0.28 s after 25 s and 0.09 s after 2 s. The KV pool
 stays out of the set (residency commits all of it, and the waits were longer with it in);
@@ -93,7 +93,7 @@ Learned the hard way:
   the q4 epilogue is four vector loads and four sums per quant group instead of three scalar
   loads per element: 75 ms -> 15 ms per 128-row step. The layout is checked per thread at run
   time and falls back to (or, where it must not be silently wrong, poisons) the generic path.
-- **Unused rows do not influence used ones** (`SPLOSH_PADCHECK`): outputs are bit-identical
+- **Unused rows do not influence used ones** (`TOPSPIN_PADCHECK`): outputs are bit-identical
   whether a tile's spare rows, or an attention tile's spare queries, hold 0 or 10,000.
 - Cooperative tensors of different operand types do not share an element partition.
   `relaxed_precision` and fp16 instead of bf16 activations made no measurable difference.
@@ -106,7 +106,7 @@ neither has been tried.
 ## 3. Weight layout and the q4 GEMM
 
 MLX stores each q4 matrix row-major. The engine runs from a tiled layout
-(`splosh convert --retile`, one resident copy):
+(`topspin convert --retile`, one resident copy):
 
 ```
 packed:  [tile of 128 rows][quant group][row in tile][32 bytes of codes]
@@ -184,7 +184,7 @@ Verify-shaped steps: 8 rows 70 -> 67 ms, 64 rows 184 -> 163 ms.
 | q4, scale and bias per 64 values | 0.003–0.008 | 502–504/512 | needs a bias term per score |
 | q4, one scale and bias per vector | — | — | failed the speculation self-test; removed |
 
-(Teacher-forced, ~3.5K tokens each of prose and code, `SPLOSH_KVQUALITY`.) With no bias term a
+(Teacher-forced, ~3.5K tokens each of prose and code, `TOPSPIN_KVQUALITY`.) With no bias term a
 score is one 256-wide accelerator matmul and one multiply, and the value scale folds into the
 probability operand.
 
@@ -212,7 +212,7 @@ Sustained, the same steps are 337 / 65 ms at 16K and 461 / 74 ms at 50K. Attenti
 600 ms step about 320 ms is attention; the score product is ~135 ms of that, the value product
 ~173 ms (254 ms together), and the softmax, staging and barriers ~68 ms. Per multiply-add the
 two products run at about 10 T/s against the weight GEMMs' 12-14 T/s. Reading the keys and
-values is 7% of the step (`SPLOSH_ATTN_ALIAS=64`, which reads every chunk from the same 64
+values is 7% of the step (`TOPSPIN_ATTN_ALIAS=64`, which reads every chunk from the same 64
 tokens, 602 ms against 650), not the 20% the old `d8` probe suggested: with a loop-invariant
 chunk the compiler lifts the whole score product out of the loop, so `d8` times "no score
 matmul". Tried at 100K and not kept: the blocks of one span dispatched together (645 ms against
@@ -226,7 +226,7 @@ keys and values, so its queries, scan, merge, output projection and MLP are skip
 rows: one sixteenth of the attention and one sixty-fourth of the weights. Rows that want logits
 come first in a step, so in a mixed step the layer is computed for a leading run of rows.
 128-row step: 278 to 273 ms at 1K, 397 to 375 at 30K, 623 to 599 at 100K. Generation after a
-6K prompt is token-identical with and without (`SPLOSH_FULL_LAST_LAYER=1`).
+6K prompt is token-identical with and without (`TOPSPIN_FULL_LAST_LAYER=1`).
 
 **Heat.** Over 7,168 rows of continuous prefill at 1K context (about 19 s) the rate is 350-390
 tok/s whatever the step width (128, 256, 512 or 2,048 rows), against 465 for the first four
@@ -240,7 +240,7 @@ each server alone: 6.4K tokens 448 tok/s against Splish's 499; 54.5K tokens 336-
 2,048-row prefill command and sums GPU time per kernel) against the same split here, per 128
 rows at short context:
 
-| Part | Splish | Splosh |
+| Part | Splish | Topspin |
 |---|---|---|
 | Weight GEMMs | 228 ms | 226 ms |
 | Gated-delta layers | 12 ms | 16-21 ms |
@@ -257,7 +257,7 @@ rows: about 130 us of core time each against 4 us for a chunk of older context. 
 7,360-token prompt the scan is 20-34 ms a step, and without it the prefill runs at 473-494
 tok/s. Why is not found. What the probes say (all step-by-step paired, ±1-2 ms): it is not the
 masked branch (`d16`), the rescale path (`d15`), keys written a stage earlier
-(`SPLOSH_ATTN_ALIAS`), the query prepare or the key store (left out: no change), the chunks
+(`TOPSPIN_ATTN_ALIAS`), the query prepare or the key store (left out: no change), the chunks
 holding the step's own rows (`d24`: left out at 4K and 36K, no change), the first or the last
 span (`d17`, `d18`), launching the threadgroups (`d21`, an empty kernel: 0.1 ms) or their set-up
 and final writes (`d22`: 2.6 ms). It goes when the two matmuls do (12 of 19 ms) and with the
@@ -282,14 +282,14 @@ tiles or key chunks being different per threadgroup (`d34`). The scan's own piec
 in place: set-up and final writes 2.6 ms, a plain three-round walk 4 ms more (`d35`), the
 real walk's masks and loop control 7 ms more (`d37`), about 15 ms a step.
 
-Two things the benchmark overstates. `SPLOSH_CTXBENCH` fills the context with synthetic keys,
+Two things the benchmark overstates. `TOPSPIN_CTXBENCH` fills the context with synthetic keys,
 and scores against them rise past the first chunk's reference often enough that the rescale
 path runs all the time: 25 ms of the scan at 36K (`d32`). On a real prompt that path is
 idle (445 tok/s with it and without). Attention figures from the benchmark at long context
 are high by that much; the real-prompt figure is the one to trust (20-25 ms of scan a step
 at 3.7K average context, where Splish's whole attention is about 12).
 
-**What the fixed cost was: the benchmark.** `SPLOSH_CTXBENCH` places each iteration's rows
+**What the fixed cost was: the benchmark.** `TOPSPIN_CTXBENCH` places each iteration's rows
 after the last one's, so a run "at 64 tokens of context" of 44 iterations of 136 rows ends at
 6,000 tokens, and of 512-row steps at 16,000. The scan was never dearer near the step's own
 rows; the context was simply not what the label said, and the "growth with the square of the
@@ -304,7 +304,7 @@ threadgroup's). Gathered as a bit per element and stored after the loop, which i
 The quality probe against fp16 gives the same figures to the last digit either way. With no
 check at all (`d32`, wrong) another 5 ms would go at 36K.
 
-**Against Splish again, with that understood.** Real prompts through the servers: Splosh 285
+**Against Splish again, with that understood.** Real prompts through the servers: Topspin 285
 ms per 128 rows at 3K average context, 308 at 9K, 377 at 27K; Splish 256 at 3K and 331 at
 27K. So about 27 ms of base and 0.7 ms per 1K of context of slope (3.8 against 3.1). The
 base: gated-delta layers 4 ms, the SiLU pass 5, norms 3, the scan's fixed part 3, and the
@@ -317,7 +317,7 @@ A warning from this search. A scan kernel sized with the wrong score capacity co
 scores, poisons its output with NaN, and is much faster: `m48c32s8` "saved" 122 ms at 100K
 and passed the speculation self-test (which compares the engine with itself) before
 `tools/serve-smoke` showed the model answering with token 0. The capacity is what the
-partition probe reports (`d5` variants, `SPLOSH_DUMP_PARTIALS`), 16 for every 48-query shape
+partition probe reports (`d5` variants, `TOPSPIN_DUMP_PARTIALS`), 16 for every 48-query shape
 tried, not what the formula gives; `m48c64s12` had been defined with 8 and was as wrong.
 Correctly sized, 32-token chunks, 12 simdgroups and 4 simdgroups are all slower than the
 64-token, 8-simdgroup kernel at every context (5 to 150 ms). A timing is worth nothing
@@ -335,8 +335,8 @@ speculative generation with prompts being evaluated (updates accepted from a slo
 speculative run are folded into its state by `sp_gdn_commit` in the stage before, since the
 eight threadgroups of a head cannot replay them between them). On from 32 rows.
 
-Probes added for this: `SPLOSH_DUMP_DISPATCHES=<rows>` lists a step's dispatches and stages;
-`SPLOSH_CTXBENCH_AB=gdn|gdnmask|attnmask|spans` alternates two settings step by step inside
+Probes added for this: `TOPSPIN_DUMP_DISPATCHES=<rows>` lists a step's dispatches and stages;
+`TOPSPIN_CTXBENCH_AB=gdn|gdnmask|attnmask|spans` alternates two settings step by step inside
 one run, which is the only comparison that survives whatever else the machine is doing (two
 runs a minute apart differed by 15% while the screen was in use).
 
@@ -352,7 +352,7 @@ CPU ~1 ms.
 **The draft pass was reading row-major weights.** Its linear layers are quantised at load and
 were left in MLX's row-major order, so none of the tiled accelerator kernels applied to them
 and every matmul went through the old row-major tile kernel. A stage-by-stage profile
-(`SPLOSH_DRAFT_PROFILE`: the pass truncated after each stage in turn) put 11 of its 17 ms in
+(`TOPSPIN_DRAFT_PROFILE`: the pass truncated after each stage in turn) put 11 of its 17 ms in
 the five layers' MLP matmuls, which are the same size as the target's and there take a fifth
 as long. Quantising straight into the tiled layout: 17.2 -> 7.4 ms, proposals identical. What
 is left is the 248K-row output head (2.8 ms for 15 rows; 2.2 ms is its weight traffic) and
@@ -365,7 +365,7 @@ obliges, but its first seven drafts change too, for the worse on prose. Isolatin
 eight rows (they attend to each other and the context only; rows 9-16 see everything) makes
 them exactly the trained block, and the second half a bonus that only counts when the first
 seven drafts are all accepted. Paired comparison, the three shapes drafted from the same
-anchors and scored against the finished greedy output (`SPLOSH_BLOCK_STUDY`), tokens per step:
+anchors and scored against the finished greedy output (`TOPSPIN_BLOCK_STUDY`), tokens per step:
 
 | Prompt | 8 | 16 | 8 + 8 isolated |
 |---|---|---|---|
@@ -459,7 +459,7 @@ seven positions and the target's token being the draft's runner-up in about a th
 one extra branch would help about 7% of steps.
 
 **What "lossless" can and cannot be tested as.** A speculative block accepted whole gives
-bit-identical logits to the same rows evaluated as an ordinary step (`SPLOSH_VERIFYCHECK`,
+bit-identical logits to the same rows evaluated as an ordinary step (`TOPSPIN_VERIFYCHECK`,
 8 and 16 rows). A row evaluated after a different history of partial acceptances does not:
 the state differs in the last bits, activations are rounded to bf16 at every matmul, and now
 and then those bits decide a rounding. Over 200-240 positions that is a mean KL divergence of
@@ -467,10 +467,10 @@ and then those bits decide a rounding. Over 200-240 positions that is a mean KL 
 order of magnitude under what int8 KV costs, and identical for 8- and 16-row blocks. It also
 means an occasional arg-max flip at a near-tie, so greedy output is not bit-reproducible
 across block shapes or batch compositions, and a free-running token comparison is not a
-sound test. `SPLOSH_SPECTEST` is therefore teacher-forced: the same tokens through blocks
+sound test. `TOPSPIN_SPECTEST` is therefore teacher-forced: the same tokens through blocks
 corrupted at a rotating position, each kept row's distribution against a one-token-a-step
 reference, bounds of 0.001 on mean KL and 0.1 on the worst. A deliberately dropped row of
-state (`SPLOSH_SPECTEST_BREAK`) gives a mean of 0.3-0.6.
+state (`TOPSPIN_SPECTEST_BREAK`) gives a mean of 0.3-0.6.
 
 ## 8. Batching
 
@@ -550,7 +550,7 @@ half of it.
 ## 9. Disk prefix store
 
 A prompt's KV pages, the recurrent state at its end and the draft's context ring are written
-to `~/Library/Caches/Splosh/prefix-cache` when its session ends, and looked up when a prompt
+to `~/Library/Caches/Topspin/prefix-cache` when its session ends, and looked up when a prompt
 arrives. A 5,905-token prompt: 14.0 s cold, 0.7 s for the follow-up turn after a server
 restart. A growing conversation is not rewritten each turn (nothing is stored within 2,048
 tokens or a sixteenth of an existing prefix; a longer prefix supersedes shorter ones). About
@@ -634,9 +634,9 @@ times, about half of all the tokens the server evaluated.
   - A cut reply is a failure. Streaming: the connection ends without its last chunk, and
     nothing is said first. Whole-body: 503, or the body left unfinished if the status had
     gone. A stream of events that simply stops is treated the same.
-  - `splosh serve` is two processes (`ServeSupervisor`). The one started by hand binds the
+  - `topspin serve` is two processes (`ServeSupervisor`). The one started by hand binds the
     port and never loads the model; the engine is its child, serving on a private Unix-domain
-    socket, and connections are passed through byte for byte. `splosh serve --restart`
+    socket, and connections are passed through byte for byte. `topspin serve --restart`
     replaces the engine without closing the port: the old engine drains and saves, new
     connections are accepted and kept (the request is read, so the client's write completes)
     and handed to the new engine when it answers. The engine asks clients to use each
@@ -645,7 +645,7 @@ times, about half of all the tokens the server evaluated.
   - `tools/restart-smoke` checks this without the model (`serve --echo`): a reply in flight
     arrives whole, a 200 KB request sent mid-restart is answered by the new engine, nothing is
     refused. With the model it has not been run yet.
-  - `splosh serve --takeover` starts in place of whatever server is on the port, an older
+  - `topspin serve --takeover` starts in place of whatever server is on the port, an older
     one-process build included: that one is asked to stop, this one binds the port the moment
     the listener closes (a few milliseconds in which a connection is refused), keeps what
     arrives, and loads the model once the other has gone.
@@ -760,7 +760,7 @@ off, requests interleaved, medians, machine hot. Three sessions on 2026-10-02: t
 after the draft-attention and deferred-norm work, the third after blocks of sixteen, copied
 drafts and the tiled draft weights (section 7):
 
-| | Splash | Splosh | Splosh / Splash |
+| | Splash | Topspin | Topspin / Splash |
 |---|---|---|---|
 | Short code prompt, decode (4, 6, 6 rounds) | 77.3, 78.9, 76.5 tok/s | 76.0, 74.5, 100.1 tok/s | 0.98, 0.94, 1.31 |
 | 6K prompt, prefill (4 rounds each) | 364, 411, 410 tok/s | 324, 342, 328 tok/s | 0.89, 0.83, 0.80 |
@@ -774,7 +774,7 @@ runs second is on a hotter machine and loses about 5%.
 rule; it states that it does not change Splash's prefill), each engine alone, one request at a
 time, same prompts, single runs:
 
-| | Splish v1.1 | Splosh |
+| | Splish v1.1 | Topspin |
 |---|---|---|
 | Decode, copying records at 1.6K / 6.4K / 18K context | 111 / 106 / 100 tok/s | 189 / 147 / 110 |
 | Decode, new code (three prompts) | 85 / 77 / 89 | 105 / 98 / 101 |
@@ -788,15 +788,15 @@ The prefill row was taken before the small whole-tile kernels and the residency 
 **Where the prefill gap is.** Each engine alone, restarted between measurements, prompts of
 1.6K, 6.4K and 17.1K (time to first token):
 
-| Prompt | Splash | Splosh |
+| Prompt | Splash | Topspin |
 |---|---|---|
 | 1,566 | 3.08 s | 3.88 s |
 | 6,365 | 12.40 s | 15.46 s |
 | 17,102 | 39.41 s | 46.24 s |
 
 Fitted as a per-token base plus a term that grows with context: Splash's base is 1.76 ms a
-token (225 ms per 128 rows), Splosh's 2.29 (293 ms); the context term is 8.2 ms per 1K per 128
-rows for Splash and 6.2 for Splosh. So Splosh's attention is the cheaper one and the whole gap
+token (225 ms per 128 rows), Topspin's 2.29 (293 ms); the context term is 8.2 ms per 1K per 128
+rows for Splash and 6.2 for Topspin. So Topspin's attention is the cheaper one and the whole gap
 is in the base, which is nine-tenths matmul. Splash's base equals what the GEMMs here cost
 with the q4 scale and bias work left out. GEMM-only steps, 128 rows:
 
@@ -812,13 +812,13 @@ files are the size that needs), so it is doing that arithmetic for less than the
 costs here. How is the open question.
 
 Where the two differ in design: Splash evaluates 2,048 rows per prefill step and writes bf16
-outputs with the SiLU gate fused into the up-projection; Splosh steps 128 rows (256 and 512
+outputs with the SiLU gate fused into the up-projection; Topspin steps 128 rows (256 and 512
 measured no faster) and keeps fp32 outputs. Its gated-delta recurrence has the same shape as
-Splosh's. Splosh's non-GEMM share of a 128-row step at 3K context is about 16% (gated-delta
+Topspin's. Topspin's non-GEMM share of a 128-row step at 3K context is about 16% (gated-delta
 22 ms, attention 18 ms, the rest 6 ms, of ~297 ms); that share is the most likely home of the
 prefill gap, since the GEMM itself runs at the accelerator's rate.
 
-Not compared head to head: 50K and beyond, where Splosh's attention costs 2.8 ms per 1K tokens
+Not compared head to head: 50K and beyond, where Topspin's attention costs 2.8 ms per 1K tokens
 of context per 128 rows.
 
 For scale, the night's starting point on the same kind of prompt was 55 tok/s decode and
@@ -889,8 +889,8 @@ it: `r48c64s8q4` 16 ms slower, `r48c32s8` 70, `r48c32s8q2` 82; the agents' `b48c
 `h48c64s8` 6 slower. Same answer on the 15K records prompt; quality probe level. Chosen in the
 server by `attentionScan`. The gated-delta candidates (`gdn_b.metal`: prepare b1, chains b2,
 history b1) are 3-4 ms a step in three timings and now the default; the fused SiLU
-(`SPLOSH_MLP_FUSED`) gains nothing, because it swaps the SiLU stage for a second accelerator
-stage and removes none. Through the servers, cold prompts: 6.4K Splosh 459, Splish 511, Splash
+(`TOPSPIN_MLP_FUSED`) gains nothing, because it swaps the SiLU stage for a second accelerator
+stage and removes none. Through the servers, cold prompts: 6.4K Topspin 459, Splish 511, Splash
 502 tok/s; 19.3K 411-435, 452, 456; 59K 375 (354 in an earlier run), 374, 370. A reading of
 Splish's source part by part (`audit/splish-study-findings.txt`) found no single large fixed
 cost left: bf16 where we move fp32 (1-2 ms), the a and b gate projections inside its packed

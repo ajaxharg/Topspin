@@ -1,8 +1,8 @@
 // swift-tools-version: 6.0
-// Splosh — from-scratch Swift 6 / Metal 4 engine.
+// Topspin — from-scratch Swift 6 / Metal 4 engine.
 //
 // Manifest authority: swift-engine-app-structure.rev4.md §3.1 (nine targets, dependency rules)
-// and IMPLEMENTATION-PLAN.md §4.4 (SploshCLI takes a *direct* Runtime edge in addition to
+// and IMPLEMENTATION-PLAN.md §4.4 (TopspinCLI takes a *direct* Runtime edge in addition to
 // Server, Model, Quant, Core and Oracle, because Swift imports are not transitive and the
 // composition root must instantiate Runtime's service and hand it to Server).
 //
@@ -12,16 +12,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "Splosh",
+    name: "Topspin",
     platforms: [
         .macOS("27.0")
     ],
-    // The executable's *product* is `splosh`, while its target stays `SploshCLI` (rev4 §3.1 names
-    // exactly nine targets, and `SploshCLI` is one of them). Every CLI gate in the plan invokes
-    // `swift run splosh ...`, and M0.5 asserts `test -x "$(swift build --show-bin-path)/splosh"`,
+    // The executable's *product* is `topspin`, while its target stays `TopspinCLI` (rev4 §3.1 names
+    // exactly nine targets, and `TopspinCLI` is one of them). Every CLI gate in the plan invokes
+    // `swift run topspin ...`, and M0.5 asserts `test -x "$(swift build --show-bin-path)/topspin"`,
     // so the product name — not the target name — is what the build must produce.
     products: [
-        .executable(name: "splosh", targets: ["SploshCLI"])
+        .executable(name: "topspin", targets: ["TopspinCLI"])
     ],
     dependencies: [
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", exact: "2.27.0")
@@ -35,65 +35,65 @@ let package = Package(
         // resource during manifest loading, so a missing metallib fails the build rather than
         // producing a library that loads to nothing.
         .target(
-            name: "SploshCore",
+            name: "TopspinCore",
             resources: [.copy("Resources/default.metallib")]
         ),
 
         .target(
-            name: "SploshQuant",
-            dependencies: ["SploshCore"]
+            name: "TopspinQuant",
+            dependencies: ["TopspinCore"]
         ),
 
         .target(
-            name: "SploshModel",
-            dependencies: ["SploshCore", "SploshQuant"]
+            name: "TopspinModel",
+            dependencies: ["TopspinCore", "TopspinQuant"]
         ),
 
         // Oracle stays a scalar reference: Model, Quant, Core only — never Runtime or Server
         // (rev4 §3.1 rule 5).
         .target(
-            name: "SploshOracle",
-            dependencies: ["SploshModel", "SploshQuant", "SploshCore"]
+            name: "TopspinOracle",
+            dependencies: ["TopspinModel", "TopspinQuant", "TopspinCore"]
         ),
 
         // Runtime must never import Server (rev4 §3.1 rule 2).
         .target(
-            name: "SploshRuntime",
-            dependencies: ["SploshModel", "SploshCore"]
+            name: "TopspinRuntime",
+            dependencies: ["TopspinModel", "TopspinCore"]
         ),
 
         .target(
-            name: "SploshServer",
+            name: "TopspinServer",
             dependencies: [
-                "SploshRuntime",
-                "SploshModel",
-                "SploshCore",
+                "TopspinRuntime",
+                "TopspinModel",
+                "TopspinCore",
                 .product(name: "Hummingbird", package: "hummingbird"),
             ]
         ),
 
         // The composition root. Runtime is listed explicitly per IMPLEMENTATION-PLAN.md §4.4.
         .executableTarget(
-            name: "SploshCLI",
+            name: "TopspinCLI",
             dependencies: [
-                "SploshRuntime",
-                "SploshServer",
-                "SploshModel",
-                "SploshQuant",
-                "SploshCore",
-                "SploshOracle",
+                "TopspinRuntime",
+                "TopspinServer",
+                "TopspinModel",
+                "TopspinQuant",
+                "TopspinCore",
+                "TopspinOracle",
             ]
         ),
 
         .testTarget(
-            name: "SploshOracleTests",
-            dependencies: ["SploshModel", "SploshQuant", "SploshCore", "SploshRuntime", "SploshOracle"]
+            name: "TopspinOracleTests",
+            dependencies: ["TopspinModel", "TopspinQuant", "TopspinCore", "TopspinRuntime", "TopspinOracle"]
         ),
 
-        // The one target allowed to import SploshCLI (rev4 §3.1 rule 3: M0.9's argv table).
+        // The one target allowed to import TopspinCLI (rev4 §3.1 rule 3: M0.9's argv table).
         .testTarget(
-            name: "SploshServerTests",
-            dependencies: ["SploshServer", "SploshRuntime", "SploshCLI"]
+            name: "TopspinServerTests",
+            dependencies: ["TopspinServer", "TopspinRuntime", "TopspinCLI"]
         ),
     ]
 )

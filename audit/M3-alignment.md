@@ -60,7 +60,7 @@ This selected rule is narrower than general section/extent alignment: it applies
 
 ## `convert --verify` consumption status
 
-M3.1 has not landed: `Sources/SploshQuant/Packing.swift` is still a placeholder and `Sources/SploshCLI/ConvertCommand.swift` still reports `notImplemented`. Therefore no `convert --verify` command can truthfully consume this rule yet, and no model bytes or verification result are claimed here. M3.1 must consume this recorded rule (and rerun its affected samples) rather than independently hard-code a different choice. Until then M3.1 remains blocked by the M2.7 missing packs and the unimplemented converter; this audit deliberately preserves that block.
+M3.1 has not landed: `Sources/TopspinQuant/Packing.swift` is still a placeholder and `Sources/TopspinCLI/ConvertCommand.swift` still reports `notImplemented`. Therefore no `convert --verify` command can truthfully consume this rule yet, and no model bytes or verification result are claimed here. M3.1 must consume this recorded rule (and rerun its affected samples) rather than independently hard-code a different choice. Until then M3.1 remains blocked by the M2.7 missing packs and the unimplemented converter; this audit deliberately preserves that block.
 
 ## Earlier failed attempts retained as evidence
 

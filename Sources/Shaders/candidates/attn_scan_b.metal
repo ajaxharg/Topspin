@@ -207,7 +207,7 @@ inline void spb_scan(device half *qB, device const uint *blocks, device const ui
         for (uint chunk = 0; chunk < chunksPerPage; ++chunk) {
             const uint t0 = pg * 256u + chunk * C;
             if (t0 >= maxVisible) break;
-            // aliasTokens (SPLOSH_ATTN_ALIAS): the chunk read from the pool's first tokens.
+            // aliasTokens (TOPSPIN_ATTN_ALIAS): the chunk read from the pool's first tokens.
             const uint tokenBase = p.aliasTokens != 0u ? kvHead * 256u + (t0 % p.aliasTokens) * p.kvHeads
                                                        : pageTokens + chunk * C;
             auto kt = tensor(kCodes + ulong(tokenBase) * 256u, dextents<int, 2>{256, C}, array<int, 2>{1, 256});

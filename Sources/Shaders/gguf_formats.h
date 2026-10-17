@@ -7,7 +7,7 @@ using namespace metal;
 // gguf_formats.h — llama.cpp's quantised weight formats as the GGUF kernels read them.
 //
 // A GGUF weight keeps its codes at their native width. Its native blocks are re-ordered once,
-// by SploshModel/GgufPlanes.swift, into three planes tiled like the engine's other weights:
+// by TopspinModel/GgufPlanes.swift, into three planes tiled like the engine's other weights:
 //
 //   plane0 [rows / 128][groups][128][Plane0 bytes]                the codes of one row's group
 //   plane1 [rows / 128][groups][128][Plane1 bytes]                their high bits, where a code is split
@@ -32,7 +32,7 @@ using namespace metal;
 // fork Splish (Apache-2.0): runtime/metal/abi/QuantFormat.h, kernels/common/quant_formats.h and
 // kernels/common/gguf_staged.h. The formats, the arithmetic that makes a weight of a code and
 // the two tables are llama.cpp's (MIT, Copyright (c) 2023-2026 The ggml authors):
-// ggml-quants.c and ggml-common.h. The values are those of SploshModel/GgufQuant.swift.
+// ggml-quants.c and ggml-common.h. The values are those of TopspinModel/GgufQuant.swift.
 
 #define SP_GGUF_TILE_ROWS 128u
 
@@ -460,7 +460,7 @@ inline float2 sp_gguf_pair_codes(uint pair)
     return float2(int2(int(pair & 0xFFFFu), int(pair >> 16)) - int(F::Zero));
 }
 
-// A chunk's weights as the reference decoder makes them (SploshModel/GgufQuant.swift), bit for
+// A chunk's weights as the reference decoder makes them (TopspinModel/GgufQuant.swift), bit for
 // bit. A scale is an fp16 times one or two small integers and a weight is that times a code of
 // at most seven bits, so every product has at most 24 significant bits and is exact in fp32
 // however it is grouped. The one sum, the offset of Q4_K and Q5_K, is of two exact terms and

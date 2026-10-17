@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Artifact-backed smoke test for `splosh serve`.
+"""Artifact-backed smoke test for `topspin serve`.
 
 Starts the real server against the q4 artifact and checks, end to end, that it loads the model,
 reports its memory, generates the reference tokens, streams them incrementally, reuses a cached
@@ -10,9 +10,9 @@ The greedy reference ids were produced by mlx-lm 0.32.0 on the same q4 pack.
 import json, os, re, shutil, signal, subprocess, sys, tempfile, threading, time, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PORT = int(os.environ.get("SPLOSH_SMOKE_PORT", "8193"))
+PORT = int(os.environ.get("TOPSPIN_SMOKE_PORT", "8193"))
 BASE = f"http://127.0.0.1:{PORT}"
-BINARY = os.environ.get("SPLOSH_BIN", os.path.join(ROOT, ".build/release/splosh"))
+BINARY = os.environ.get("TOPSPIN_BIN", os.path.join(ROOT, ".build/release/topspin"))
 ARTIFACT = next(p for p in (os.path.join(ROOT, "models/q4/weights.tiled.splw"), os.path.join(ROOT, "models/q4/weights.splw")) if os.path.exists(p) or p.endswith("weights.splw"))
 REFERENCE_PROMPT = "The capital of France is"
 REFERENCE_IDS = [11751, 13, 198, 760, 6511, 314, 9564, 369, 19241, 13, 198, 760]
@@ -31,7 +31,7 @@ def get(path):
 
 def main():
     if not os.path.exists(BINARY): sys.exit(f"missing binary {BINARY}; run `swift build -c release --disable-sandbox`")
-    if not os.path.exists(ARTIFACT): sys.exit(f"missing artifact {ARTIFACT}; run `splosh convert`")
+    if not os.path.exists(ARTIFACT): sys.exit(f"missing artifact {ARTIFACT}; run `topspin convert`")
 
     # 1. The engine reproduces the reference token ids straight from the artifact.
     gen = subprocess.run([BINARY, "generate", "--prompt", REFERENCE_PROMPT, "--max-tokens", str(len(REFERENCE_IDS)), "--ids"],
@@ -42,13 +42,13 @@ def main():
 
     # The prefix store goes to a scratch directory, with a threshold low enough for the test's
     # prompts; everything else is the default configuration.
-    scratch = tempfile.mkdtemp(prefix="splosh-smoke-")
-    config = os.path.join(scratch, "splosh.toml")
+    scratch = tempfile.mkdtemp(prefix="topspin-smoke-")
+    config = os.path.join(scratch, "topspin.toml")
     with open(config, "w") as f:
         f.write(f'prefixCacheDir = "{os.path.join(scratch, "prefix-cache")}"\nprefixCacheMinTokens = 128\nprefixCacheGiB = 2\n')
 
     def start():
-        log = open("/tmp/splosh-smoke.log", "a")
+        log = open("/tmp/topspin-smoke.log", "a")
         process = subprocess.Popen([BINARY, "serve", "--port", str(PORT), "--config", config], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
         for _ in range(240):
             try:
@@ -63,15 +63,15 @@ def main():
         try: process.wait(timeout=20)
         except subprocess.TimeoutExpired: process.kill()
 
-    open("/tmp/splosh-smoke.log", "w").close()
+    open("/tmp/topspin-smoke.log", "w").close()
     server = start()
     try:
         check("server starts and answers /health", server.poll() is None)
         if server.poll() is not None:
-            print(open("/tmp/splosh-smoke.log").read()); return
+            print(open("/tmp/topspin-smoke.log").read()); return
 
         # 2. Startup reports the model's memory, and it matches the artifact.
-        startup = open("/tmp/splosh-smoke.log").read()
+        startup = open("/tmp/topspin-smoke.log").read()
         weights = re.search(r"weights\s+([0-9.]+) GiB", startup)
         text_bytes = artifact_text_bytes()
         reported = float(weights.group(1)) if weights else 0.0
@@ -153,7 +153,7 @@ def main():
               f"weights {memory['weightBytes'] / 2**30:.2f} GiB, KV in use {memory['kvBytesUsed'] / 2**20:.0f} MiB")
         check("/v1/stats lists cached prefixes", len(stats["cached"]) >= 1)
         dashboard = urllib.request.urlopen(BASE + "/", timeout=10).read().decode()
-        check("dashboard is served at /", "<title>Splosh</title>" in dashboard)
+        check("dashboard is served at /", "<title>Topspin</title>" in dashboard)
 
         # 7b. A harness may send a finished turn back without its thinking. The next prompt then
         # parts from the last one a few tokens before its end (where the reply opens), and the

@@ -10,7 +10,7 @@ The API, the three pages, stopping and restarting, and every setting. Back to th
 - [Settings](#settings)
 - [Conversations on disk](#conversations-on-disk)
 
-`splosh serve` listens on `127.0.0.1:8091` and gives you an API for clients and three pages
+`topspin serve` listens on `127.0.0.1:8091` and gives you an API for clients and three pages
 for you.
 
 ## The API
@@ -38,34 +38,36 @@ At `http://127.0.0.1:8091/`, the detailed view of what the server is doing now:
 ## The models and settings pages
 
 **The models page**, at `/models`, is where a model is loaded in place of the one in memory,
-where more are downloaded, and where the model settings of `splosh.toml` are. **The settings
-page**, at `/settings`, edits the rest of `splosh.toml` and can restart the engine. Each has a
+where more are downloaded, and where the model settings of `topspin.toml` are. **The settings
+page**, at `/settings`, edits the rest of `topspin.toml` and can restart the engine. Each has a
 link to the other and to the dashboard.
 
 Started from a terminal, the server opens its page in the browser once it is listening: the
-dashboard, or on a first launch the models to download. `splosh serve --no-open`, or
+dashboard, or on a first launch the models to download. `topspin serve --no-open`, or
 `openBrowser = false`, leaves the browser alone.
 
 ## Stopping and restarting
 
-- `splosh serve --restart`, from another terminal: the engine is replaced (a new build, new
+- `topspin serve --restart`, from another terminal: the engine is replaced (a new build, new
   settings) while the port stays open. Requests in flight finish, new ones wait, and every
   conversation is picked up from disk where it was.
 - Ctrl+C lets requests finish and writes every conversation to disk before exiting.
 
 ## Settings
 
-All optional, in `./splosh.toml` or the file given to `--config`.
+All optional, in `./topspin.toml` or the file given to `--config`.
 
 | Key | Default | Meaning |
 |---|---|---|
 | `port`, `host` | 8091, 127.0.0.1 | where to listen |
 | `slots` | 8 | conversations that can hold state at once, running or cached |
 | `concurrency` | as many as slots | most requests worked on at once; the rest queue |
+| `fanLimit` | none | fan speed to hold, in percent of full speed (0 keeps it off as far as possible): the engine rests between steps as much as that takes |
+| `workPercent` | 100 | most of the time the engine may work; it rests between steps for the remainder |
 | `contextWindow` | 262144 | longest prompt accepted |
 | `kvPages` | sized from memory | KV pool in 256-token pages, shared by all sessions |
 | `draftPath` | `inputs/draft`, or the Hugging Face cache | `none` disables speculative decoding |
-| `prefixCacheDir` | `~/Library/Caches/Splosh/prefix-cache` | conversations on disk; `none` disables |
+| `prefixCacheDir` | `~/Library/Caches/Topspin/prefix-cache` | conversations on disk; `none` disables |
 | `prefixCacheGiB` | 16 | disk budget; least recently used go first |
 | `decodeWeight` | 1 | how a step is shared between sessions that are writing and prompts that are waiting. 1 gives a waiting prompt a full-width step with the writers riding along (best for agent batches); 20 or more leaves a running stream untouched |
 | `answerReserve` | 8192 | tokens of a reply's limit kept for its answer: thinking that has used the rest is closed by the server, so an answer is still written. At most a quarter of the limit; 0 lets thinking run to the limit |
@@ -73,11 +75,11 @@ All optional, in `./splosh.toml` or the file given to `--config`.
 | `requestLog` | true | one line per finished request: tokens reused, evaluated, generated, rates, and where the time outside the GPU went |
 | `openBrowser` | true | a server started from a terminal shows its page in the browser once it is listening |
 | `model`, `model.<id>` | none | the models the server can load, and the one it starts on (see [Changing between them](models.md#changing-between-them)) |
-| `modelSwitch` | request | `request`: a chat naming another registered model has it loaded. `manual`: only `splosh models --load` does |
+| `modelSwitch` | request | `request`: a chat naming another registered model has it loaded. `manual`: only `topspin models --load` does |
 | `modelDwellSeconds`, `switchWaitSeconds` | 60, 120 | how long a model just loaded is kept before another may replace it, and how long a request for another model waits for the loaded one to go idle before it is refused |
 
 ## Conversations on disk
 
-`splosh cache stats` lists what is stored on disk and `splosh cache purge --all` clears it.
+`topspin cache stats` lists what is stored on disk and `topspin cache purge --all` clears it.
 What is kept, and why, is under [Prefill](why-it-is-fast.md#prefill): nothing is evaluated
 twice.

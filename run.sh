@@ -1,15 +1,15 @@
 #!/bin/bash
-# Start the Splosh server from the repository, building first when there is no release binary.
+# Start the Topspin server from the repository, building first when there is no release binary.
 #
-#   ./run.sh                  serve the model named by `model` in splosh.toml
-#   ./run.sh --model uq6      any arguments go to `splosh serve`
+#   ./run.sh                  serve the model named by `model` in topspin.toml
+#   ./run.sh --model uq6      any arguments go to `topspin serve`
 #   ./run.sh --build          rebuild the shaders and the binary, then serve
 #   ./run.sh --restart        replace the engine of the server that is already running
 #   ./run.sh --takeover       start in place of the server that is already running
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
-BIN="$ROOT/.build/release/splosh"
+BIN="$ROOT/.build/release/topspin"
 PORT=8091
 
 build=0

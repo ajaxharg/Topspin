@@ -2,9 +2,9 @@
 set -euo pipefail
 PORT=8091
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOG=$(mktemp /tmp/splosh-openai-compat.XXXXXX.log)
-MODELS=$(mktemp /tmp/splosh-openai-models.XXXXXX.json)
-STREAM=$(mktemp /tmp/splosh-openai-stream.XXXXXX.sse)
+LOG=$(mktemp /tmp/topspin-openai-compat.XXXXXX.log)
+MODELS=$(mktemp /tmp/topspin-openai-models.XXXXXX.json)
+STREAM=$(mktemp /tmp/topspin-openai-stream.XXXXXX.sse)
 pid=""
 run() { printf '+ '; printf '%q ' "$@"; printf '\n'; "$@"; }
 fail() { echo "openai-compat-check: FAIL: $*" >&2; exit 1; }
@@ -22,9 +22,9 @@ trap cleanup EXIT
 cd "$ROOT"
 [[ -z "$(lsof -nP -iTCP:${PORT} -sTCP:LISTEN 2>/dev/null || true)" ]] || fail "127.0.0.1:${PORT} already bound"
 # Use an existing executable when available; otherwise build and use the required Swift toolchain.
-bin="$(swift build --disable-sandbox --show-bin-path 2>/dev/null)/splosh"
-if [[ ! -x "$bin" ]]; then run swift build --disable-sandbox >/dev/null; bin="$(swift build --disable-sandbox --show-bin-path)/splosh"; fi
-[[ -x "$bin" ]] || fail 'splosh binary unavailable'
+bin="$(swift build --disable-sandbox --show-bin-path 2>/dev/null)/topspin"
+if [[ ! -x "$bin" ]]; then run swift build --disable-sandbox >/dev/null; bin="$(swift build --disable-sandbox --show-bin-path)/topspin"; fi
+[[ -x "$bin" ]] || fail 'topspin binary unavailable'
 echo "+ $bin serve --echo --port $PORT"
 "$bin" serve --echo --port "$PORT" >"$LOG" 2>&1 & pid=$!
 ready=0

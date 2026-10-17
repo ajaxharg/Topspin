@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Structural check for Splosh's `Package.swift`, run against `swift package dump-package` output.
+"""Structural check for Topspin's `Package.swift`, run against `swift package dump-package` output.
 
 Authority: `IMPLEMENTATION-PLAN.md` §4.1 (the M0.1 replacement gate) and `M0-WORK-ORDER.md` M0.1.
-The dependency graph is rev4 §3.1 as amended by `IMPLEMENTATION-PLAN.md` §4.4 (`SploshCLI` takes a
-direct `SploshRuntime` edge in addition to `SploshServer`).
+The dependency graph is rev4 §3.1 as amended by `IMPLEMENTATION-PLAN.md` §4.4 (`TopspinCLI` takes a
+direct `TopspinRuntime` edge in addition to `TopspinServer`).
 
 The checker asserts:
 
   * the deployment target is exactly `.macOS("27.0")`;
   * there is exactly one direct external dependency -- Hummingbird, required `exact: "2.27.0"`;
   * the package declares exactly the nine targets of rev4 §3.1;
-  * it declares exactly one product -- an executable named `splosh`, built from `SploshCLI`.
-    The product name is load-bearing: every CLI gate in the plan invokes `swift run splosh ...`
-    and M0.5 asserts `test -x "$(swift build --show-bin-path)/splosh"`. With no explicit product
+  * it declares exactly one product -- an executable named `topspin`, built from `TopspinCLI`.
+    The product name is load-bearing: every CLI gate in the plan invokes `swift run topspin ...`
+    and M0.5 asserts `test -x "$(swift build --show-bin-path)/topspin"`. With no explicit product
     SwiftPM names the executable after its target, and every one of those gates fails. Checking it
     here turns a misnamed executable into an M0.1 failure rather than an M0.5 surprise;
   * every target's dependency edges match the required graph (by-name edges and external-product
@@ -25,7 +25,7 @@ only when a manifest declares them explicitly -- and SwiftPM itself fails a targ
 `Tests/<name>` for a test target and `Sources/<name>` otherwise.
 
 Usage:
-    python3 tools/check_package.py /tmp/splosh-package.json
+    python3 tools/check_package.py /tmp/topspin-package.json
 
 Exit code is 0 iff every check passes; otherwise each mismatch is named and the exit is 1.
 """
@@ -46,30 +46,30 @@ DEPENDENCY_EXACT = "2.27.0"
 
 # product name -> (executable?, targets)
 REQUIRED_PRODUCTS: dict[str, tuple[bool, list[str]]] = {
-    "splosh": (True, ["SploshCLI"]),
+    "topspin": (True, ["TopspinCLI"]),
 }
 
 # target name -> (by-name SwiftPM edges, external product names)
 REQUIRED_TARGETS: dict[str, tuple[list[str], list[str]]] = {
-    "SploshCore": ([], []),
-    "SploshQuant": (["SploshCore"], []),
-    "SploshModel": (["SploshCore", "SploshQuant"], []),
-    "SploshOracle": (["SploshModel", "SploshQuant", "SploshCore"], []),
-    "SploshRuntime": (["SploshModel", "SploshCore"], []),
-    "SploshServer": (["SploshRuntime", "SploshModel", "SploshCore"], ["Hummingbird"]),
-    "SploshCLI": (
+    "TopspinCore": ([], []),
+    "TopspinQuant": (["TopspinCore"], []),
+    "TopspinModel": (["TopspinCore", "TopspinQuant"], []),
+    "TopspinOracle": (["TopspinModel", "TopspinQuant", "TopspinCore"], []),
+    "TopspinRuntime": (["TopspinModel", "TopspinCore"], []),
+    "TopspinServer": (["TopspinRuntime", "TopspinModel", "TopspinCore"], ["Hummingbird"]),
+    "TopspinCLI": (
         [
-            "SploshRuntime",
-            "SploshServer",
-            "SploshModel",
-            "SploshQuant",
-            "SploshCore",
-            "SploshOracle",
+            "TopspinRuntime",
+            "TopspinServer",
+            "TopspinModel",
+            "TopspinQuant",
+            "TopspinCore",
+            "TopspinOracle",
         ],
         [],
     ),
-    "SploshOracleTests": (["SploshModel", "SploshQuant", "SploshCore", "SploshOracle"], []),
-    "SploshServerTests": (["SploshServer", "SploshRuntime", "SploshCLI"], []),
+    "TopspinOracleTests": (["TopspinModel", "TopspinQuant", "TopspinCore", "TopspinOracle"], []),
+    "TopspinServerTests": (["TopspinServer", "TopspinRuntime", "TopspinCLI"], []),
 }
 
 # The package root owns the manifest; the source-tree check is relative to it, never to $PWD.

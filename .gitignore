@@ -1,4 +1,4 @@
-# Splosh workspace ignore rules (created by M0.1; this file is scoped to the Splosh workspace
+# Topspin workspace ignore rules (created by M0.1; this file is scoped to the Topspin workspace
 # and does not touch the enclosing repository's own ignore rules).
 
 # SwiftPM build products and the tool's caches.
@@ -7,7 +7,7 @@
 
 # Metal shader intermediates, and the linked library, which is a build product of `make shaders`.
 *.air
-Sources/SploshCore/Resources/default.metallib
+Sources/TopspinCore/Resources/default.metallib
 
 # Model inputs: the payloads are large and fetched, the provenance manifests and checksums are
 # committed. `inputs/*` ignores the payloads; the negations re-include the directory and the two
@@ -18,10 +18,10 @@ inputs/tokenizer/*
 !inputs/tokenizer/SHA256SUMS
 !inputs/SHA256SUMS
 
-# Converted weight artifacts (`convert --out`, default `$PWD/splosh-weights/`), and the models
-# `splosh download` installs: kept out of `.build`, which `swift package clean` empties.
+# Converted weight artifacts (`convert --out`, default `$PWD/topspin-weights/`), and the models
+# `topspin download` installs: kept out of `.build`, which `swift package clean` empties.
 artifacts/
-splosh-weights/
+topspin-weights/
 /models/
 
 # Durable cache directories.

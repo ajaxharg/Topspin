@@ -4,8 +4,8 @@ using namespace metal;
 
 // gdn_b.metal — candidate kernels for the gated-delta layer's split path (engine.metal:
 // sp_gdn_prepare, sp_gdn_chains, sp_gdn_history). Same bindings (SP_GDN_ARGS), same buffers,
-// same grids; selected by name through SPLOSH_GDN_PREPARE, SPLOSH_GDN_CHAINS and
-// SPLOSH_GDN_HISTORY.
+// same grids; selected by name through TOPSPIN_GDN_PREPARE, TOPSPIN_GDN_CHAINS and
+// TOPSPIN_GDN_HISTORY.
 //
 //   sp_gdn_prepare_b1                 drop-in for sp_gdn_prepare, bit-identical outputs
 //   sp_gdn_chains_b1, _b2             drop-in for sp_gdn_chains, results equal to rounding
@@ -20,13 +20,13 @@ using namespace metal;
 //   sp_gdn_prepare_bs1, _bns1         as _b1 and _bn1, storing q and k there only; these need
 //                                     the recurrence kernel of the same letters
 //
-// The letters after `_b` are what Sources/SploshRuntime/GdnKernelChoice.swift goes by to refuse
+// The letters after `_b` are what Sources/TopspinRuntime/GdnKernelChoice.swift goes by to refuse
 // a prepare kernel and a recurrence kernel that do not work together: `n` has to match, and an
 // `s` prepare kernel needs an `s` recurrence. The kernels numbered 2 use the first two
 // simdgroups of a threadgroup, so they can be dispatched with 64 threads
-// (SPLOSH_GDN_CHAIN_THREADS=64) as well as the 128 the others need.
+// (TOPSPIN_GDN_CHAIN_THREADS=64) as well as the 128 the others need.
 //
-// Figures below are from the timing test in Tests/SploshOracleTests/GdnCandidateTests.swift: 48
+// Figures below are from the timing test in Tests/TopspinOracleTests/GdnCandidateTests.swift: 48
 // dispatches of a stage for one 128-row run, which for engine.metal's kernels gives prepare 2.4,
 // chains 11.8, finish 1.05, history 1.07 ms.
 //

@@ -1,15 +1,15 @@
-Splosh contains the third-party material below, which keeps its own license.
+Topspin contains the third-party material below, which keeps its own license.
 
 
 Splash (https://github.com/incoai/splash) and its fork Splish
 (https://github.com/publicExcess/splish)
 
-The way Splosh runs GGUF weights is adapted from Splash and Splish:
+The way Topspin runs GGUF weights is adapted from Splash and Splish:
 
 - Sources/Shaders/gguf_formats.h: the plane encoding, the chunk order and the
   per-format decoders, from runtime/metal/abi/QuantFormat.h,
   kernels/common/quant_formats.h and kernels/common/gguf_staged.h.
-- Sources/SploshModel/GgufPlanes.swift: the encoding the weights are repacked
+- Sources/TopspinModel/GgufPlanes.swift: the encoding the weights are repacked
   into, from runtime/metal/abi/QuantFormat.h and
   kernels/shared/gguf_repack.metal, re-tiled from 256 rows to 128.
 - Sources/Shaders/engine_gguf.metal: decoding a block of weights into
@@ -23,7 +23,7 @@ text is in LICENSE.
 
 DFlash (https://github.com/z-lab/dflash)
 
-The arithmetic of the draft model in Sources/SploshRuntime/DraftModel.swift
+The arithmetic of the draft model in Sources/TopspinRuntime/DraftModel.swift
 and Sources/Shaders/draft.metal follows dflash/model.py. DFlash is licensed
 under the Apache License, Version 2.0, whose text is in LICENSE.
 
@@ -33,7 +33,7 @@ llama.cpp (https://github.com/ggml-org/llama.cpp)
 The GGUF tensor formats, the arithmetic that makes a weight of a code, and the
 IQ4_NL values and the IQ3_S grid (ggml's kvalues_iq4nl and iq3s_grid, from
 ggml/src/ggml-common.h) in Sources/Shaders/gguf_formats.h,
-Sources/SploshModel/GgufQuant.swift and tools/gguf_check.py follow ggml's
+Sources/TopspinModel/GgufQuant.swift and tools/gguf_check.py follow ggml's
 ggml/src/ggml-quants.c. The tables are compiled into the Metal library.
 
 MIT License

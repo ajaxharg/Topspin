@@ -1,4 +1,4 @@
-# Splosh
+# Topspin
 
 A Swift and Metal inference engine for **Qwen3.8-27B** (the MLX 4-bit pack, or Unsloth's GGUF
 files at their own size) and its fine-tune **Swift-1.5**, on Apple silicon, with an OpenAI-compatible server built for what
@@ -22,7 +22,7 @@ How it is made is in [pages of its own](#how-it-is-made).
 <p align="center">
   <a href="https://buymeacoffee.com/andysteafund"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20tea&amp;emoji=%F0%9F%8D%B5&amp;slug=andysteafund&amp;button_colour=FFDD00&amp;font_colour=000000&amp;font_family=Cookie&amp;outline_colour=000000&amp;coffee_colour=ffffff" alt="Buy me a tea"></a>
   <br>
-  <sub>Splosh is free. If it runs well on your Mac, a tea keeps the work on it going.</sub>
+  <sub>Topspin is free. If it runs well on your Mac, a tea keeps the work on it going.</sub>
 </p>
 
 ## Contents
@@ -31,6 +31,7 @@ How it is made is in [pages of its own](#how-it-is-made).
 - [Batches of agents](#batches-of-agents): several conversations answered in the same step
 - [Getting it running](#getting-it-running): from a Mac with nothing installed to a served model
 - [The server](#the-server): the API and the dashboard
+- [Using it from a harness](#using-it-from-a-harness): opencode and dsh
 - [Models](#models): the four there are, and Swift-1.5
 - [How it is made](#how-it-is-made): the pages with the detail
 - [Limits](#limits)
@@ -43,19 +44,19 @@ How it is made is in [pages of its own](#how-it-is-made).
 
 Measured 2026-10-03 on an M5 Pro (20-core GPU, 64 GB), High Power mode, against Splash 1.1.0
 (`incoai/splash`) and Splish (a tuned fork of it). The model is the same 4-bit Qwen3.8-27B in
-all three: Splosh ran the `mlx-community/Qwen3.8-27B-4bit` pack, and Splash and Splish ran
+all three: Topspin ran the `mlx-community/Qwen3.8-27B-4bit` pack, and Splash and Splish ran
 `incoai/Qwen3.8-27B-Splash`, Inco's package of that pack. Each engine alone in memory; every
 prompt new, so no cache helps; greedy, thinking off, an 800-token essay as the reply; two
 passes in opposite orders, mean shown.
 
-| Prompt (4-bit weights) | Prefill, tokens/s (Splosh / Splish / Splash) | Decode, tokens/s (Splosh / Splish / Splash) |
+| Prompt (4-bit weights) | Prefill, tokens/s (Topspin / Splish / Splash) | Decode, tokens/s (Topspin / Splish / Splash) |
 |---|---|---|
 | 10.7K tokens | 467 / **484** / 450 | **35.9** / 35.6 / 30.8 |
 | 54.5K | 388 / **394** / 364 | **32.8** / 32.3 / 27.0 |
 | 165.7K | **276** / 264 / 251 | **25.8** / 24.7 / 23.8 |
 | 221.3K | **241** / 228 / 224 | **23.5** / 22.9 / 21.0 |
 
-| Four 21K prompts sent together (4-bit weights) | Splosh | Splish | Splash |
+| Four 21K prompts sent together (4-bit weights) | Topspin | Splish | Splash |
 |---|---|---|---|
 | All four replies finished | **251 s** | 270 s | 282-285 s |
 | Every token, prompt and reply, over that time | **354 /s** | 330 /s | 313-316 /s |
@@ -75,7 +76,7 @@ These are one machine's figures. How they were taken, and what else was tried, i
 
 ## Batches of agents
 
-Splosh is built for several agents working at once. Requests that arrive together are not
+Topspin is built for several agents working at once. Requests that arrive together are not
 queued behind each other: each step, rows from every live conversation are packed into one
 pass over the weights, a block of drafted tokens to check for each one that is writing and
 prompt rows for those still reading. The weights are read once however many share the step,
@@ -108,13 +109,13 @@ ones that take time: each is a large download.
 |---|---|---|
 | 1 | [Install Xcode](#1-install-xcode) | the compilers for Swift and for the Metal kernels |
 | 2 | [Get the code](#2-get-the-code) | `git clone` |
-| 3 | [Build](#3-build) | the kernels, then the `splosh` program |
+| 3 | [Build](#3-build) | the kernels, then the `topspin` program |
 | 4 | [Start the server](#4-start-the-server) | on its first launch it offers the models, and downloads and installs the one you pick |
 | 5 | [Use it](#5-use-it) | point a client at the API, and open the dashboard |
 
 **What the Mac needs**
 
-- A GPU with the neural accelerator that Metal 4's tensor operations run on. Splosh was
+- A GPU with the neural accelerator that Metal 4's tensor operations run on. Topspin was
   developed and measured on an M5 Pro only; nothing else has been tried.
 - macOS 27.
 - Memory: 14.1 GiB for the default model's weights (15 to 21 GiB for the others, under
@@ -137,11 +138,11 @@ xcodebuild -downloadComponent MetalToolchain
 ### 2. Get the code
 
 ```bash
-git clone https://github.com/ajaxharg/Splosh.git
+git clone https://github.com/ajaxharg/Topspin.git
 ```
 
 ```bash
-cd Splosh
+cd Topspin
 ```
 
 Everything below is run from this directory: the server looks for its settings, its models and
@@ -153,13 +154,13 @@ its downloads under it.
 make shaders && swift build -c release --disable-sandbox
 ```
 
-If anything is missing, `.build/release/splosh doctor` checks the machine and the toolchain
+If anything is missing, `.build/release/topspin doctor` checks the machine and the toolchain
 and says what to do about each thing it finds.
 
 ### 4. Start the server
 
 ```bash
-.build/release/splosh serve
+.build/release/topspin serve
 ```
 
 There is no model yet, so the server starts without one, says so, and opens its page in your
@@ -171,11 +172,11 @@ browser. Choose a model in either place:
 - **In the terminal** the server is running in, press Enter for the default (`mq4`), or type
   another model's name and press Enter.
 
-Splosh then does the rest, naming each step in the terminal and on the page with its progress:
+Topspin then does the rest, naming each step in the terminal and on the page with its progress:
 
 ```mermaid
 flowchart LR
-    serve["splosh serve"] --> have{"a model<br>installed?"}
+    serve["topspin serve"] --> have{"a model<br>installed?"}
     have -- no --> choose["choose one:<br>the page, or Enter<br>in the terminal"]
     choose --> download["download<br>from Hugging Face"]
     download --> check["check each file's<br>SHA-256"]
@@ -188,7 +189,7 @@ flowchart LR
 
 The download for `mq4` is 20 GB in all (the weights and the draft model). If it is stopped, or
 the connection drops, it carries on from where it got to the next time it is asked for. When
-the model is loaded, the page in the browser becomes the dashboard. The next `splosh serve`
+the model is loaded, the page in the browser becomes the dashboard. The next `topspin serve`
 finds the model installed and loads it straight away.
 
 If you already have the model's files, or would rather fetch them yourself, see
@@ -208,7 +209,7 @@ requests in flight finish, and every conversation is written to disk for the nex
 
 ## The server
 
-`splosh serve` listens on `127.0.0.1:8091` and gives you an API for clients and three pages
+`topspin serve` listens on `127.0.0.1:8091` and gives you an API for clients and three pages
 for you.
 
 ![The dashboard with Unsloth's Q5 file loaded, while one conversation at 164K tokens of context is being answered: decode at 36 tokens/s, memory divided into weights, KV cache, session state and checkpoints, the session's row with its context, tokens per step and share of drafts accepted, and the prefixes cached for other conversations.](docs/figures/dashboard.png)
@@ -222,17 +223,81 @@ for you.
   reply being written.
 - **The models page**, at `/models`, loads a model in place of the one in memory and downloads
   more.
-- **The settings page**, at `/settings`, edits `splosh.toml` and can restart the engine.
+- **The settings page**, at `/settings`, edits `topspin.toml` and can restart the engine.
 
-`splosh serve --restart`, from another terminal, replaces the engine (a new build, new
+`topspin serve --restart`, from another terminal, replaces the engine (a new build, new
 settings) while the port stays open: requests in flight finish, new ones wait, and every
 conversation is picked up from disk where it was.
 
 Every setting, and the rest of the API and the pages, is in [The server](docs/server.md).
 
+## Using it from a harness
+
+Topspin speaks the OpenAI chat-completions API, so an agent harness can use it as a provider
+pointed at `http://127.0.0.1:8091/v1`. The server does not check the `Authorization` header,
+so any placeholder key will do. Model names must be ones the server lists: check them with
+`curl -s http://127.0.0.1:8091/v1/models`, which returns the ids in `topspin.toml`.
+
+Start the server first (`topspin serve`, or `./run.sh`), and keep it running while you work.
+
+### opencode
+
+Tested with opencode 1.18. Add a provider to `opencode.json` in the project, or in
+`~/.config/opencode/opencode.json` for every project:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "topspin": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Topspin",
+      "options": {
+        "baseURL": "http://127.0.0.1:8091/v1",
+        "apiKey": "topspin"
+      },
+      "models": {
+        "mq4": { "name": "Topspin 27B, MLX 4-bit" },
+        "sq5": { "name": "Topspin 27B, Swift-1.5 Q5_K_M" }
+      }
+    }
+  },
+  "model": "topspin/mq4"
+}
+```
+
+Each key under `models` is a model id from `/v1/models`. Add one entry per model you want to
+pick, then choose it with `/models` in opencode. The `model` line sets the default.
+
+### dsh
+
+dsh reads its providers from the profile's patch file, `~/.dsh/profiles/web/cordis.patch.yml`.
+Add a `topspin` provider under `llm-pi-ai` → `providers`, next to any others:
+
+```yaml
+topspin:
+  api: openai-completions
+  baseURL: http://127.0.0.1:8091/v1
+  models:
+    - id: mq4
+      name: Topspin 27B - MLX 4-bit (mq4)
+      maxTokens: 30000
+    - id: sq5
+      name: Topspin 27B - Swift-1.5 Q5_K_M (sq5)
+      maxTokens: 30000
+```
+
+Pick the model in dsh's model picker. dsh sends only the names listed here, and Topspin answers
+an unlisted name with whatever model is loaded, so a new model must be added to this list as
+well as to `topspin.toml`.
+
+Two limits from dsh's side apply: it gives up after 300 seconds without a streamed token, so a
+prompt that takes longer than that to read fails; and `maxTokens` caps each reply. Set
+`streamIdleTimeoutMs` on the provider to change the idle limit.
+
 ## Models
 
-Everything Splosh runs is one model, Qwen3.8-27B, at four precisions. One is in memory at a
+Everything Topspin runs is one model, Qwen3.8-27B, at four precisions. One is in memory at a
 time, and the server changes between the ones that are installed: from the models page, from
 the command line, or when a request names another.
 
@@ -284,7 +349,7 @@ The detail is in pages of its own:
 | [Why it is fast](docs/why-it-is-fast.md) | prefill, decode, many sessions at once, and what was tried and did not work |
 | [Models](docs/models.md) | the four models and Swift-1.5, installing one, where the files are kept, changing between them, what has been measured |
 | [The server](docs/server.md) | the API, the three pages, stopping and restarting, every setting |
-| [Working on Splosh](docs/development.md) | where things are in the source, measuring a change, the tests |
+| [Working on Topspin](docs/development.md) | where things are in the source, measuring a change, the tests |
 
 ## Limits
 
@@ -295,7 +360,7 @@ agent batches for days, not months.
 
 ## Credits
 
-Splosh was built to be measured against Splash and Splish, and it learned from them: the
+Topspin was built to be measured against Splash and Splish, and it learned from them: the
 row-wise layout of the attention softmax follows Splash's, and timing Splash's prefill tile is
 what showed that small kernels run faster. The engine for the MLX pack shares no code with
 them. The GGUF path does: decoding a block of weights into scratch memory before each product
@@ -311,7 +376,7 @@ decoders in `Sources/Shaders/gguf_formats.h` are adapted from theirs (Apache-2.0
   `mlx-community` 4-bit pack.
 - The draft checkpoint is Inco's `incoai/Qwen3.8-27B-DFlash2`. The draft model's arithmetic
   follows `dflash/model.py` in `z-lab/dflash` (Apache-2.0).
-- Drafts copied from the context (`Sources/SploshRuntime/LookupIndex.swift`) are the copy rule
+- Drafts copied from the context (`Sources/TopspinRuntime/LookupIndex.swift`) are the copy rule
   of [Splish](https://github.com/publicExcess/splish), which has it from
   [TensorFold](https://github.com/ashhart/TensorFold): when the last tokens of a reply repeat
   earlier text, the draft is what followed them. The idea is theirs; the code is not.
@@ -325,13 +390,13 @@ under Credits keeps its own licence; its notices are in
 
 ## Support
 
-If Splosh is useful to you, you can put something in
+If Topspin is useful to you, you can put something in
 [Andy's Tea Fund](https://buymeacoffee.com/andysteafund).
 
 ## See also
 
 - [Splash](https://github.com/incoai/splash): Inco's inference engine for Apple silicon, the
-  yardstick Splosh was measured against.
+  yardstick Topspin was measured against.
 - [Splish](https://github.com/publicExcess/splish): a tuned fork of Splash. Its copy rule is
-  where Splosh's drafts copied from the context come from.
+  where Topspin's drafts copied from the context come from.
 - [TensorFold](https://github.com/ashhart/TensorFold): where Splish has the copy rule from.

@@ -2,7 +2,7 @@
 
 **Source:** `huggingface/transformers@main`
 `src/transformers/models/qwen3_5/modeling_qwen3_5.py` (88,586 bytes, fetched 2026-10-01).
-Retrieved over the network; this file records the formulas the Splosh kernels must match.
+Retrieved over the network; this file records the formulas the Topspin kernels must match.
 
 This replaces guesswork. Every formula below is quoted from that file.
 
@@ -119,7 +119,7 @@ out = x_rot * cos + rotate_half(x_rot) * sin
 `mrope_section = [11, 11, 10]`, `mrope_interleaved = true`. The three grids (T, H, W) are
 recomposed by `recomposition_frequencies`, but `Qwen3_5TextModel` builds text position ids as
 `arange(seq) + past_seen_tokens` broadcast to all grids. **For text-only serving all three
-position ids are equal, so mRoPE reduces exactly to standard RoPE.** Splosh serves text only;
+position ids are equal, so mRoPE reduces exactly to standard RoPE.** Topspin serves text only;
 this equivalence is why a single position scalar is sufficient, and it is the reason the
 vision tower's 333 tensors are not loaded.
 
@@ -186,11 +186,11 @@ and must be masked out before sampling.
 
 `mlx_lm/models/qwen3_5.py` `sanitize` rewrites `input_layernorm`, `post_attention_layernorm`,
 `model.norm`, `q_norm` and `k_norm` as `v + 1.0` at conversion time and then evaluates them with
-a plain `nn.RMSNorm` (`w * x * rsqrt(mean(x^2) + eps)`). The q4 pack Splosh serves is that
+a plain `nn.RMSNorm` (`w * x * rsqrt(mean(x^2) + eps)`). The q4 pack Topspin serves is that
 converted form: observed stored values are centred near 1 (for example layer 0
 `input_layernorm` begins `1.0469, 0.9375, 0.9258`), not near 0.
 
-**Every norm in the Splosh engine therefore applies the stored weight directly.** Applying
+**Every norm in the Topspin engine therefore applies the stored weight directly.** Applying
 `(1 + w)` to this artifact, as §1 describes for the un-converted checkpoint, doubles the offset
 and produces garbage tokens. The older `rmsnorm.metal` oracle kernel encodes the un-converted
 form and must not be used against this artifact.

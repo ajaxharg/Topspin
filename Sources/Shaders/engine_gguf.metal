@@ -53,7 +53,7 @@ struct SpGgufParams {
 };
 
 // The out projection of a gated-delta layer keeps its columns in the file's order of the 48
-// value heads, which is not the engine's (SploshModel/GgufNames.swift): the file's head h is the
+// value heads, which is not the engine's (TopspinModel/GgufNames.swift): the file's head h is the
 // engine's head 3 (h % 16) + h / 16. A head is 128 columns, four groups, and inner is 6144.
 // Permuting columns would re-quantise every block, so the weight stays as it is and the `heads`
 // kernels read the activations of group g from where the engine put its head. The order is a

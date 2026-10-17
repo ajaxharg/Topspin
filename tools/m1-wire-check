@@ -3,8 +3,8 @@ set -euo pipefail
 
 PORT=8091
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LOG=$(mktemp /tmp/splosh-m1-server.XXXXXX.log)
-OUT=$(mktemp /tmp/splosh-m1-wire.XXXXXX.out)
+LOG=$(mktemp /tmp/topspin-m1-server.XXXXXX.log)
+OUT=$(mktemp /tmp/topspin-m1-wire.XXXXXX.out)
 pid=""
 cleanup() {
   set +e
@@ -40,7 +40,7 @@ cd "$ROOT"
 # Build once, then launch the executable directly so cleanup owns the actual
 # listener process rather than a `swift run` launcher with a detached child.
 swift build --disable-sandbox >/dev/null
-"$(swift build --disable-sandbox --show-bin-path)/splosh" serve --echo --port "$PORT" >"$LOG" 2>&1 &
+"$(swift build --disable-sandbox --show-bin-path)/topspin" serve --echo --port "$PORT" >"$LOG" 2>&1 &
 pid=$!
 ready=0
 for _ in $(seq 1 60); do

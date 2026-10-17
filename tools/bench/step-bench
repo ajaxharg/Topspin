@@ -3,7 +3,7 @@
 # (heat, other load) hits every variant alike. Each variant is a quoted list of environment
 # assignments; "X=1" is the unmodified engine.
 #
-#   tools/bench/step-bench <context> "X=1" "SPLOSH_DEFER_NORM=0" ...
+#   tools/bench/step-bench <context> "X=1" "TOPSPIN_DEFER_NORM=0" ...
 #
 #   ROUNDS=3      rounds; the best of each variant is kept
 #   SUSTAINED=1   14 consecutive iterations per run with the first four dropped (the GPU is
@@ -18,7 +18,7 @@ for v in "$@"; do bp[$v]=99999; bv[$v]=99999; done
 iterations=${SUSTAINED:+14}
 for round in $(seq 1 ${ROUNDS:-3}); do
   for v in "$@"; do
-    line=$(env ${(z)v} ${iterations:+SPLOSH_CTXBENCH_ITERATIONS=$iterations} SPLOSH_CTXBENCH=$ctx .build/release/splosh generate --prompt x 2>&1 | grep -E "^context")
+    line=$(env ${(z)v} ${iterations:+TOPSPIN_CTXBENCH_ITERATIONS=$iterations} TOPSPIN_CTXBENCH=$ctx .build/release/topspin generate --prompt x 2>&1 | grep -E "^context")
     pval=$(echo $line | sed -E 's/.*rows\) ([0-9]+) ms =.*/\1/'); vval=$(echo $line | sed -E 's/.*verify step \([0-9]+ rows\) ([0-9.]+) ms.*/\1/')
     [[ "$pval" == <-> ]] || { echo "$v: failed: $line"; continue; }
     (( pval < bp[$v] )) && bp[$v]=$pval; (( vval < bv[$v] )) && bv[$v]=$vval

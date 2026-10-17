@@ -1,4 +1,4 @@
-# Working on Splosh
+# Working on Topspin
 
 Where things are in the source, how to time a change, and the end-to-end tests. Back to the
 [README](../README.md).
@@ -13,14 +13,14 @@ Where things are in the source, how to time a change, and the end-to-end tests. 
 |---|---|
 | `Sources/Shaders/` | the Metal kernels; `candidates/` holds variants, shipped and rejected |
 | `Sources/Shaders/engine_gguf.metal`, `gguf_formats.h` | the GGUF kernels and their format decoders |
-| `Sources/SploshModel/Gguf*.swift` | reading a GGUF file, its reference decoders, the converter |
-| `Sources/SploshRuntime/Engine.swift` | one step: rows in, logits out |
-| `Sources/SploshRuntime/BatchScheduler.swift` | sessions, slots, reuse, what goes in each step |
-| `Sources/SploshRuntime/DraftModel.swift`, `LookupIndex.swift` | the two sources of drafts |
-| `Sources/SploshRuntime/PrefixStore.swift` | conversations on disk |
-| `Sources/SploshServer/` | the HTTP API, chat template, tool-call parsing, dashboard |
-| `Sources/SploshCLI/` | `serve`, `download`, `models`, `generate`, `convert`, `cache`, `doctor`; the supervisor that holds the port and replaces the engine |
-| `Sources/SploshCLI/ModelLibrary.swift`, `HubDownload.swift`, `DownloadCommand.swift` | the models that can be fetched, each file's pinned SHA-256, the resumed download and the install |
+| `Sources/TopspinModel/Gguf*.swift` | reading a GGUF file, its reference decoders, the converter |
+| `Sources/TopspinRuntime/Engine.swift` | one step: rows in, logits out |
+| `Sources/TopspinRuntime/BatchScheduler.swift` | sessions, slots, reuse, what goes in each step |
+| `Sources/TopspinRuntime/DraftModel.swift`, `LookupIndex.swift` | the two sources of drafts |
+| `Sources/TopspinRuntime/PrefixStore.swift` | conversations on disk |
+| `Sources/TopspinServer/` | the HTTP API, chat template, tool-call parsing, dashboard |
+| `Sources/TopspinCLI/` | `serve`, `download`, `models`, `generate`, `convert`, `cache`, `doctor`; the supervisor that holds the port and replaces the engine |
+| `Sources/TopspinCLI/ModelLibrary.swift`, `HubDownload.swift`, `DownloadCommand.swift` | the models that can be fetched, each file's pinned SHA-256, the resumed download and the install |
 
 What these do, and why they are made the way they are, is in
 [Why it is fast](why-it-is-fast.md).

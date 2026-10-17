@@ -1,5 +1,5 @@
 #!/bin/bash
-# Splosh M0.10 shell preflight. The Swift doctor owns the structured report; this entry point
+# Topspin M0.10 shell preflight. The Swift doctor owns the structured report; this entry point
 # repeats the non-Swift host probes and then refuses any required-through-M1 FAIL.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,5 +24,5 @@ EOF
 if xcrun -sdk macosx metal -std=metal4.0 -fmodules-cache-path="$ROOT/.build/metal-module-cache" -c .build/preflight-probe/probe.metal -o .build/preflight-probe/probe.air >/dev/null 2>&1 && xcrun -sdk macosx metallib .build/preflight-probe/probe.air -o .build/preflight-probe/probe.metallib >/dev/null 2>&1; then pass metal-module-cache compiled-in-workspace 'real Metal compile' 'use -fmodules-cache-path inside workspace'; else bad metal-module-cache compile-failed 'real Metal compile' 'use -fmodules-cache-path inside workspace'; fi
 [[ -x "$ROOT/tools/fetch_inputs.py" ]] && python3 tools/fetch_inputs.py --help >/dev/null 2>&1 && pass fetch-help available 'python3 fetch_inputs.py --help' 'install Python 3' || bad fetch-help unavailable 'python3 fetch_inputs.py --help' 'install Python 3'
 free="$(df -kP . | awk 'NR==2 {print $4*1024}')"; min=$((10*1024*1024*1024)); [[ "$free" -ge "$min" ]] && pass disk "$free bytes" ">=$min bytes" 'free at least 10 GiB' || bad disk "$free bytes" ">=$min bytes" 'free at least 10 GiB'
-if "$ROOT/.build/out/Products/Debug/splosh" doctor >/tmp/splosh-preflight-doctor.out 2>/tmp/splosh-preflight-doctor.err; then pass doctor 'required checks passed' 'no required FAIL' 'inspect deferred checks'; else cat /tmp/splosh-preflight-doctor.out; cat /tmp/splosh-preflight-doctor.err >&2; bad doctor 'required doctor check failed' 'no required FAIL' 'run splosh doctor'; fi
+if "$ROOT/.build/out/Products/Debug/topspin" doctor >/tmp/topspin-preflight-doctor.out 2>/tmp/topspin-preflight-doctor.err; then pass doctor 'required checks passed' 'no required FAIL' 'inspect deferred checks'; else cat /tmp/topspin-preflight-doctor.out; cat /tmp/topspin-preflight-doctor.err >&2; bad doctor 'required doctor check failed' 'no required FAIL' 'run topspin doctor'; fi
 exit "$fail"

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Download and install models, from a stand-in for Hugging Face, and check what the user sees.
 
-`splosh download` and the server's first launch are the real code: the downloader with its
+`topspin download` and the server's first launch are the real code: the downloader with its
 resumed parts and SHA-256 checks, the install written down for the pages, the server that starts
 without a model, offers the downloads and starts its engine when one is installed. What stands
 in is the far end and the model: a small HTTP server here plays Hugging Face (HF_ENDPOINT), a
-library of small files replaces the built-in one (SPLOSH_LIBRARY), a "conversion" copies its
-input (SPLOSH_ECHO_CONVERT), and the server is `splosh serve --echo`. Nothing is fetched from
+library of small files replaces the built-in one (TOPSPIN_LIBRARY), a "conversion" copies its
+input (TOPSPIN_ECHO_CONVERT), and the server is `topspin serve --echo`. Nothing is fetched from
 the network and no model is loaded. This checks that:
 
-  - `splosh download` fetches the tokenizer, the weights and the draft model, converts, and
-    registers the model in splosh.toml; an MLX pack goes through both of its conversions;
+  - `topspin download` fetches the tokenizer, the weights and the draft model, converts, and
+    registers the model in topspin.toml; an MLX pack goes through both of its conversions;
   - a download that is stopped keeps its part and is carried on from with a Range request;
     one whose connection drops is carried on from within the same run;
   - a file that does not match its pinned SHA-256 is refused and removed;
@@ -25,11 +25,11 @@ the network and no model is loaded. This checks that:
   - an install can be stopped from the page, and ends when the server is stopped;
   - an install is refused from another origin.
 
-usage: tools/download-smoke [path to splosh]     (default .build/release/splosh)
+usage: tools/download-smoke [path to topspin]     (default .build/release/topspin)
 """
 import fcntl, hashlib, http.client, http.server, json, os, pty, shutil, signal, socket, subprocess, sys, tempfile, termios, threading, time
 
-BINARY = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else ".build/release/splosh")
+BINARY = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else ".build/release/topspin")
 failures = []
 
 
@@ -162,11 +162,11 @@ class Place:
             json.dump(self.library, file)
         self.cache = os.path.join(self.directory, "hf-cache")
         os.makedirs(self.cache)
-        with open(self.path("splosh.toml"), "w") as file:
+        with open(self.path("topspin.toml"), "w") as file:
             file.write(config)
-        self.environment = dict(os.environ, SPLOSH_LIBRARY=path, HF_ENDPOINT=f"http://127.0.0.1:{self.hub.port}", HF_HUB_CACHE=self.cache,
-                                SPLOSH_ECHO_CONVERT="150", SPLOSH_ECHO_INTERVAL_MS="20", SPLOSH_ECHO_LOAD_MS="100")
-        for name in ("SPLOSH_MODEL", "SPLOSH_DOWNLOAD_PARENT", "HF_HOME"):
+        self.environment = dict(os.environ, TOPSPIN_LIBRARY=path, HF_ENDPOINT=f"http://127.0.0.1:{self.hub.port}", HF_HUB_CACHE=self.cache,
+                                TOPSPIN_ECHO_CONVERT="150", TOPSPIN_ECHO_INTERVAL_MS="20", TOPSPIN_ECHO_LOAD_MS="100")
+        for name in ("TOPSPIN_MODEL", "TOPSPIN_DOWNLOAD_PARENT", "HF_HOME"):
             self.environment.pop(name, None)
 
     def path(self, *parts):
@@ -189,7 +189,7 @@ class Place:
             return None
 
     def config(self):
-        with open(self.path("splosh.toml")) as file:
+        with open(self.path("topspin.toml")) as file:
             return file.read()
 
     def same(self, relative, hub_path):
@@ -230,7 +230,7 @@ def chat(port, text, model="any"):
 
 
 class Server:
-    """A `splosh serve --echo` in a place, for as long as the `with` lasts. `terminal` gives it one to read from."""
+    """A `topspin serve --echo` in a place, for as long as the `with` lasts. `terminal` gives it one to read from."""
 
     def __init__(self, place, terminal=False):
         self.place, self.terminal = place, terminal
@@ -303,7 +303,7 @@ def wait_for(condition, seconds=20):
 
 
 def command(root):
-    print("\nsplosh download")
+    print("\ntopspin download")
     place = Place(root, "command")
     listed = place.download("--list")
     check(listed.returncode == 0 and all(m["id"] in listed.stdout for m in place.library["models"]) and place.path("inputs/gguf/tiny.gguf") in listed.stdout,
@@ -317,7 +317,7 @@ def command(root):
     check(place.same("inputs/tokenizer/tokenizer.json", "/test/tok/resolve/0123456789abcdef/tokenizer.json")
           and os.path.exists(place.path("inputs/tokenizer/chat_template.jinja")), "the tokenizer and the chat template are fetched")
     check(place.same("inputs/draft/model.safetensors", "/test/draft/resolve/0123456789abcdef/model.safetensors"), "the draft model is fetched")
-    check('model.tiny = "models/tiny.splw"' in place.config(), "the model is registered in splosh.toml")
+    check('model.tiny = "models/tiny.splw"' in place.config(), "the model is registered in topspin.toml")
     check(all(f"[{n}/5]" in said for n in range(1, 6)) and "Tokenizer" in said and "Convert" in said and "SHA-256" in said and "is installed" in said,
           "the terminal is told each step, what it is for, and the end")
     check("tiny is installed: /" in said and "/command/models/tiny.splw (2.0 MB)" in said and "inputs/gguf/tiny.gguf (2.0 MB), can be deleted" in said,
@@ -409,7 +409,7 @@ def first_launch(root):
     place = Place(root, "first", registry)
     with Server(place) as server:
         check(server.process.poll() is None and server.said("No model is installed yet"), "it starts, and says in its terminal that it has no model")
-        check(server.said("splosh download") and server.said(place.path("inputs/gguf/tiny.gguf")) and not server.said("press Enter"),
+        check(server.said("topspin download") and server.said(place.path("inputs/gguf/tiny.gguf")) and not server.said("press Enter"),
               "it says how to get one and where own files go (and offers no Enter without a terminal)")
         status, page = request(server.port, "GET", "/")
         check(status == 200 and "Choose a model" in page and "/v1/downloads" in page, "its page at / offers the downloads")
@@ -422,9 +422,9 @@ def first_launch(root):
         status, listed = request(server.port, "GET", "/v1/models")
         check(status == 200 and listed["loaded"] is None and listed["setup"] is True and all(m["state"] == "missing" for m in listed["data"]), "GET /v1/models lists the registry with nothing loaded")
         shown = subprocess.run([BINARY, "models", "--port", str(server.port)], cwd=place.directory, env=place.environment, capture_output=True, text=True, timeout=30)
-        check("has no model yet" in shown.stdout and "splosh download" in shown.stdout, "`splosh models` says the server has no model, and what fetches one")
+        check("has no model yet" in shown.stdout and "topspin download" in shown.stdout, "`topspin models` says the server has no model, and what fetches one")
         status, page = request(server.port, "GET", "/models")
-        check(request(server.port, "GET", "/settings")[0] == 200 and status == 200 and "Splosh models" in page, "the settings page and the models page are there")
+        check(request(server.port, "GET", "/settings")[0] == 200 and status == 200 and "Topspin models" in page, "the settings page and the models page are there")
         check(all("artifactPath" in m and m["artifactPath"] == place.path(m["artifact"]) for m in state["models"]), "each model says where its converted file is to be")
 
         check(request(server.port, "POST", "/v1/downloads", {"model": "tiny"}, {"Origin": "http://elsewhere.example"})[0] == 403, "an install asked for from another origin is refused")
@@ -507,8 +507,8 @@ def terminal(root):
 
 def main():
     if not os.path.exists(BINARY):
-        sys.exit(f"missing binary {BINARY}; build it, or give the path of one (tools/download-smoke .build/debug/splosh)")
-    root = tempfile.mkdtemp(prefix="splosh-download-smoke-")
+        sys.exit(f"missing binary {BINARY}; build it, or give the path of one (tools/download-smoke .build/debug/topspin)")
+    root = tempfile.mkdtemp(prefix="topspin-download-smoke-")
     try:
         command(root)
         resumed(root)
